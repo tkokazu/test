@@ -1,0 +1,130 @@
+# 既存のスプレッドシートを取得_エリアシート
++get_spreadsheet_2:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: 'https://docs.google.com/spreadsheets/d/1dY3LFLUY-joMWb7uCun5AjtjKwDNd8-VTxgrzQcw_nE/edit?pli=1#gid=68839887'
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を取得_各都道府県シートを取得
++get_cells_2:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_2
+  range: '都道府県別優先度!A2:B'
+  findAll: false
+
+# 変数に保存_行数判定用
++store_value_4:
+  action>: StoreValue
+  key: prefAllData
+  value: +get_cells_2
+
+# 各要素について繰り返す
++for_each_1:
+  for_each>:
+    prefRowData: +get_cells_2
+  _do:
+
+    # 既存のスプレッドシートを取得_各都道府県シート
+    +get_spreadsheet_1:
+      action>: GetSpreadsheet
+      provider: gsheet_5290baffd7a527476880
+      spreadsheet_id: ${prefRowData[1]}
+      meta:
+        display:
+          provider:
+            type: chip
+            label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+            icon: googlespreadsheet
+
+    # セルの値を取得_RawData
+    +get_cells_1:
+      action>: GetCells
+      spreadsheet: +get_spreadsheet_1
+      range: 'Raw Data!A2:H'
+      findAll: false
+
+    # 変数に保存
+    +store_value_1:
+      action>: StoreValue
+      key: rawData
+      value: +get_cells_1
+
+    # スクリプトを実行_PropertyIDを抽出
+    +run_script_4:
+      action>: RunScript
+      code: "const propertyID = new Set(rawData.map(x => x[1]));\nconst keyArray = [...propertyID];\nconst loopArray = [];\ndo {\n  const elm = keyArray.splice(0, 30);\n  loopArray.push(elm);\n} while (keyArray.length != 0);\nreturn loopArray;\n"
+
+    # 変数に保存_分割されたリスト
+    +store_value_6:
+      action>: StoreValue
+      key: execQueueList
+      value: +run_script_4
+
+    # スクリプトを実行_都道府県の行番号
+    +run_script_1:
+      action>: RunScript
+      code: "const rowIndex = prefAllData.findIndex(x => x[0] === prefRowData[0]);\nreturn rowIndex + 2;\n"
+
+    # 変数に保存_都道府県の行番号
+    +store_value_5:
+      action>: StoreValue
+      key: rowIndex
+      value: +run_script_1
+
+    # 各要素について繰り返す
+    +for_each_2:
+      for_each>:
+        keyArray: +run_script_4
+        withIndex: loop
+      _do:
+
+        # 変数に保存
+        +store_value_3:
+          action>: StoreValue
+          key: nowTime
+          value: ${moment().utcOffset(540).format("YYYYMMDD")}
+
+        # 変数に保存_渡すパラメータ
+        +store_value_2:
+          action>: StoreValue
+          key: param
+          value:
+            targetHotelList: ${keyArray}
+            fileName: '${nowTime}_${loop + 1}_${prefRowData[0]}.csv'
+            sheet_id: ${prefRowData[1]}
+            rowNum: ${rowIndex}
+            fileNum: ${loop + 1}
+
+        # 真のとき
+        +if_1:
+          if>: true
+          _do:
+
+            # ワークフローを実行する
+            +add_to_queue_1:
+              action>: AddToQueue
+              workflow_id: 51859
+              params: ${param}
+              meta:
+                display:
+                  workflow_id:
+                    label: 'アドベンチャーGCP用'
+                    icon: build
+                    type: chip
+
+    # セルの値を更新_生成されるCSVファイルの数を記入
+    +update_cells_1:
+      action>: UpdateCells
+      spreadsheet: +get_spreadsheet_2
+      range: '都道府県別優先度!H${rowIndex}'
+      values: ${execQueueList.length}
+
+    # 強制終了
+    +kill_attempt_1:
+      action>: KillAttempt
+      message: ''

@@ -1,0 +1,123 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: https://moneyforward.com/
+  lang: ja-JP
+  userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML,
+    like Gecko) Chrome/86.0.4240.80 Safari/537.36
+  headless: true
+
+# クリック
++click_2:
+  action>: Click
+  browser: "+open_browser_1"
+  selector: ".web-sign-in > a"
+  confirm: true
+  ignoreError: true
+
+# クリック_mail
++click_1:
+  action>: Click
+  browser: "+open_browser_1"
+  selector: div.blockContent > a
+  confirm: true
+  ignoreError: true
+
+# mlad
++inject_script_1:
+  action>: InjectScript
+  browser: "+click_1"
+  code: |
+    let input = document.querySelector('input[name="mfid_user[email]"]');
+    input.value = "taku.okazu@gmail.com";
+    setTimeout(() => document.querySelector('input[type="submit"]').click(), 1500);
+  returnValue: false
+
+# pswd
++type_password_1:
+  action>: TypePassword
+  browser: "+inject_script_1"
+  selector: input[name="mfid_user[password]"]
+  password: "********"
+  waitBefore: 3000
+  ignoreError: true
+
+# pswd
++inject_script_2:
+  action>: InjectScript
+  browser: "+inject_script_1"
+  code: 'setTimeout(() => document.querySelector(''input[type="submit"]'').click(),
+    1500);
+
+    '
+  waitAfter: 10000
+  returnValue: false
+
+# URLへ遷移
++go_to_1:
+  action>: GoTo
+  browser: "+inject_script_2"
+  url: https://moneyforward.com/bs/portfolio
+
+# 現物と信用だけ取得
++inject_script_3:
+  action>: InjectScript
+  browser: "+go_to_1"
+  code: |
+    function tableToArray(elm) {
+      let res = [];
+      let tr = Array.from(elm.querySelectorAll("tr"));
+      tr.forEach(trElm => {
+        let td = Array.from(trElm.querySelectorAll("th,td"));
+        res.push(td.map(x => x.innerText.trim()));
+      });
+      return res;
+    }
+
+    let sinyoEl = document.querySelector("#portfolio_det_mgn"); //信用
+    let tab_1 = sinyoEl.querySelector("table.table-mgn");
+    let genbutsuEl = document.querySelector("#portfolio_det_eq"); //現物
+    let tab_2 = genbutsuEl.querySelector("table.table-eq");
+    let json = {
+      sinyo: tableToArray(tab_1),
+      genbutsu: tableToArray(tab_2)
+    };
+    json;
+  returnValue: true
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: table
+  value: "+inject_script_3"
+
+# スクリプトを実行_信用に列を追加
++run_script_1:
+  action>: RunScript
+  code: |
+    let colNum = table.genbutsu[0].findIndex(x => x === "評価額");
+    let sinyo = table.sinyo.map(x => {
+      x.splice(colNum, 0, "-");
+      return x;
+    });
+    sinyo.shift();
+    return table.genbutsu.concat(sinyo);
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5a2e4385349996c6a727
+  spreadsheet_id: 1gnBMcfKegu8PVr-Gx2vOjMl285tU1BSmM4DNTgxmsBc
+
+# セルの値を削除
++clear_values_1:
+  action>: ClearValues
+  spreadsheet: "+get_spreadsheet_1"
+  range: 410283058!A2:M
+
+# セルの値を更新
++update_cells_1:
+  action>: UpdateCells
+  spreadsheet: "+get_spreadsheet_1"
+  range: 410283058!A1
+  values: "+run_script_1"

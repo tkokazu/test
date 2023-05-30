@@ -1,0 +1,95 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://stageinc.zohorecruit.com/vendorportal'
+  lang: 'ja-JP'
+  headless: true
+
+# 文字入力
++type_text_1:
+  action>: TypeText
+  browser: +open_browser_1
+  selector: '#portalsigniniframe >> .frm-user-name > .txtBxDesktop'
+  text: 'agent@visionary-inc.com'
+  clearValue: false
+  ignoreError: true
+
+# 文字入力
++type_text_2:
+  action>: TypeText
+  browser: +type_text_1
+  selector: '#portalsigniniframe >> :nth-child(2) > dd > .txtBxDesktop'
+  text: 'vira-202106'
+  clearValue: false
+  ignoreError: true
+
+# クリック
++click_1:
+  action>: Click
+  browser: +type_text_2
+  selector: '#portalsigniniframe >> #submit'
+  confirm: true
+  ignoreError: true
+
+# クリック_求人
++click_2:
+  action>: Click
+  browser: +click_1
+  selector: '.jobsTab'
+  confirm: true
+  waitBefore: 10000
+  waitAfter: 3000
+  ignoreError: true
+
+# スクレイピング
++scrape_page_1:
+  action>: ScrapePage
+  browser: +click_2
+  selector: 'tr[name="jobrow"] h2 > a'
+  text_only: false
+  ignoreError: true
+
+# 各要素について繰り返す
++for_each_1:
+  for_each>:
+    rowData: +scrape_page_1
+  _do:
+
+    # クリック_求人詳細
+    +click_3:
+      action>: Click
+      browser: +click_2
+      selector: ${rowData.selector}
+      confirm: true
+      waitAfter: 5000
+      ignoreError: true
+
+    # テキストを取得_求人タイトル
+    +get_text_1:
+      action>: GetText
+      browser: +click_3
+      selector: h1
+      ignoreError: true
+
+    # テキストを取得_求人の説明文
+    +get_text_2:
+      action>: GetText
+      browser: +click_3
+      selector: '#jobdesccontent'
+      ignoreError: true
+
+    # スクレイピング_求人の情報
+    +scrape_page_2:
+      action>: ScrapePage
+      browser: +click_3
+      selector: '#jobInformationSection h3 + ul > li'
+      text_only: true
+      ignoreError: true
+
+    # クリック_戻る
+    +click_4:
+      action>: Click
+      browser: +click_3
+      selector: 'h1 > .portal-bc-backbtn'
+      confirm: true
+      ignoreError: true

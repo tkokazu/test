@@ -1,0 +1,29 @@
+# Encoding
++inject_script_satofuru_1:
+  action>: InjectScript
+  browser: ''
+  code: "var Encoding;\nvar xhr = new XMLHttpRequest();\nxhr.open(\n  \"GET\",\n  \"https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/1.0.30/encoding.js\",\n  true\n);\nxhr.onreadystatechange = function() {\n  if (xhr.readyState == 4) {\n    Encoding = eval(xhr.responseText + \"Encoding\");\n  }\n};\nxhr.send();\n"
+  returnValue: false
+
+# フォームデータの作成
++inject_script_satofuru_2:
+  action>: InjectScript
+  browser: ''
+  code: "const createDateObj = add => {\n  const obj = new Date();\n  obj.setDate(obj.getDate() - add);\n  return {\n    y: obj.getFullYear(),\n    m: obj.getMonth() + 1,\n    d: obj.getDate()\n  };\n};\nconst today = createDateObj(0);\nconst fromDate = createDateObj(5);\n\nconst token = document.querySelector('meta[name=\"csrf-token\"]').content;\nconst formData =\n  \"__shop_key_admin=city-kasai-hyogo\" +\n  \"&mode=csv\" +\n  \"&order_detail_id=\" +\n  \"&order_id=\" +\n  \"&deliv_shop_id=\" +\n  \"&deliv_partner_id=\" +\n  \"&search_order_receipt_number=\" +\n  \"&search_total1=\" +\n  \"&search_total2=\" +\n  \"&search_donation_year_from=\" +\n  fromDate.y +\n  \"&search_donation_month_from=\" +\n  fromDate.m +\n  \"&search_donation_day_from=\" +\n  fromDate.d +\n  \"&search_donation_year_to=\" +\n  today.y +\n  \"&search_donation_month_to=\" +\n  today.m +\n  \"&search_donation_day_to=\" +\n  today.d +\n  \"&search_payment_year_from=\" +\n  \"&search_payment_month_from=\" +\n  \"&search_payment_day_from=\" +\n  \"&search_payment_year_to=\" +\n  \"&search_payment_month_to=\" +\n  \"&search_payment_day_to=\" +\n  \"&search_deposit_year_from=\" +\n  \"&search_deposit_month_from=\" +\n  \"&search_deposit_day_from=\" +\n  \"&search_deposit_year_to=\" +\n  \"&search_deposit_month_to=\" +\n  \"&search_deposit_day_to=\" +\n  \"&search_actual_notice_close_year_from=\" +\n  \"&search_actual_notice_close_month_from=\" +\n  \"&search_actual_notice_close_year_to=\" +\n  \"&search_actual_notice_close_month_to=\" +\n  \"&search_order_name1=\" +\n  \"&search_order_name2=\" +\n  \"&search_order_kana1=\" +\n  \"&search_order_kana2=\" +\n  \"&search_order_tel=\" +\n  \"&search_order_detail_id=\" +\n  \"&search_deliv_condition=\" +\n  \"&search_shop_name=\" +\n  \"&search_deliv_name1=\" +\n  \"&search_deliv_name2=\" +\n  \"&search_deliv_kana1=\" +\n  \"&search_deliv_kana2=\" +\n  \"&search_deliv_tel=\" +\n  \"&search_deliv_pref=\" +\n  \"&search_product_id=\" +\n  \"&search_page_max=10\" +\n  \"&search_pageno=\" +\n  \"&order_ids=\" +\n  \"&address_check_error_flg=\" +\n  \"&authenticity_token=\" +\n  token;\n\n//埋め込む\nconst a = document.createElement(\"a\");\na.id = \"rpaFormData\";\na.innerText = formData;\ndocument.body.appendChild(a);\n"
+  waitAfter: 5000
+  returnValue: false
+
+# CSVの中身を取得する
++inject_script_satofuru_3:
+  action>: InjectScript
+  browser: ''
+  code: "const element = document.querySelector(\"#rpaFormData\");\nif (!!element) {\n  const endpoint =\n    \"https://manage.satofull.jp/admin/order/order_deliv_search.php?__shop_key_admin=city-kasai-hyogo\";\n  const req = new XMLHttpRequest();\n  req.open(\"post\", endpoint);\n  req.responseType = \"arraybuffer\";\n  req.setRequestHeader(\n    \"Accept\",\n    \"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\"\n  );\n  req.setRequestHeader(\"Authorization\", \"Basic ZWNvcmFuZ2U6ek04UlFhSmI=\");\n  req.setRequestHeader(\"Content-Type\", \"application/x-www-form-urlencoded\");\n  req.onload = function() {\n    const arr = new Uint8Array(req.response);\n    const rst = Encoding.convert(arr, {\n      to: \"UNICODE\",\n      from: \"SJIS\",\n      type: \"string\"\n    });\n    console.log(rst);\n    element.innerText = JSON.stringify(rst);\n  };\n  req.send(element.innerText);\n}\n"
+  waitAfter: 10000
+  returnValue: false
+
+# ファイルアップロード_さとふる
++inject_script_50000:
+  action>: InjectScript
+  browser: ''
+  code: "var time = new Date();\nvar times = [\n  time.getMonth() + 1,\n  time.getDate(),\n  time.getHours(),\n  time.getMinutes()\n].map(x => (\"0\" + x).slice(-2));\ntimes.unshift(time.getFullYear());\nvar fileName = \"delivery_\" + times.join(\"\");\n\nvar csvData = document.querySelector(\"#inputArea\").value;\nvar str = Encoding.stringToCode(JSON.parse(csvData));\nvar sjisConvert = Encoding.convert(str, \"sjis\", \"unicode\");\nvar u8a = new Uint8Array(sjisConvert);\nvar blob = new Blob([u8a], { type: \"text/csv\" });\nvar file = new File([blob], fileName + \".csv\");\n//downloadFile(file);\nvar transfer = new DataTransfer();\ntransfer.items.add(file);\ndocument.querySelector('input[name=\"import_file\"]').files = transfer.files;\n\n//ダウンロードして確認したいとき用\nfunction downloadFile(blob) {\n  var a = document.createElement(\"a\");\n  a.href = window.URL.createObjectURL(blob);\n  a.download = \"check.csv\";\n  a.click();\n}\n"
+  returnValue: false

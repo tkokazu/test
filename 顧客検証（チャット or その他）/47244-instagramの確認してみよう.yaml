@@ -1,0 +1,28 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://pairs.lv/'
+  lang: 'ja-JP'
+  timeZone: 'Asia/Tokyo'
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3864.0 Safari/537.36'
+  headless: true
+
+# フォロワー数を取得
++inject_script_1:
+  action>: InjectScript
+  browser: +open_browser_1
+  code: "async function getUser(userName) {\n  let promise = new Promise((resolve, reject) => {\n    let url =\n      \"https://i.instagram.com/api/v1/users/web_profile_info/?username=\" +\n      userName;\n    let ajax = new XMLHttpRequest();\n    ajax.open(\"get\", url, false);\n    ajax.setRequestHeader(\"x-ig-app-id\", \"936619743392459\"); //固定値でいいのか怪しい\n    ajax.onreadystatechange = () => {\n      if (ajax.readyState == 4) {\n        resolve(JSON.parse(ajax.response));\n      }\n    };\n    ajax.send();\n  });\n  return await promise;\n}\ngetUser(\"${user_id}\");\n"
+  waitBefore: 2000
+  waitAfter: ${Math.floor(Math.random() * 55000) + 5000}
+  returnValue: true
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: user_info
+  value: +inject_script_1
+
+# スクリプトを実行_フォロワー数
++run_script_1:
+  action>: RunScript
+  code: "if (!!Object.keys(user_info).length) {\n  let follower_count = user_info.data.user.edge_followed_by.count;\n  let user_name = user_info.data.user.full_name;\n  return [user_name, follower_count];\n} else {\n  return [null, null];\n}\n"

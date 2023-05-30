@@ -1,0 +1,6 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://accounts.google.com/signin/v2/identifier?service=wise&passive=1209600&continue=https%3A%2F%2Fdocs.google.com%2Fforms%2Fd%2Fe%2F1FAIpQLScnfMBezjRJdNvjoQ5yJeEQEck4R5qL1u6EOQOwNYvlKkjuIg%2Fviewform&followup=https%3A%2F%2Fdocs.google.com%2Fforms%2Fd%2Fe%2F1FAIpQLScnfMBezjRJdNvjoQ5yJeEQEck4R5qL1u6EOQOwNYvlKkjuIg%2Fviewform&ltmpl=forms&flowName=GlifWebSignIn&flowEntry=ServiceLogin'
+  lang: 'ja-JP'
+  headless: true

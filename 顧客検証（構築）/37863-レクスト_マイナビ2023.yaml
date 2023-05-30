@@ -1,0 +1,48 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://job.mynavi.jp/23/corp/'
+  lang: 'ja-JP'
+  headless: true
+
+# 文字入力
++type_text_1:
+  action>: TypeText
+  browser: +open_browser_1
+  selector: '#mwCorpNo'
+  text: 223441
+  clearValue: false
+  ignoreError: true
+
+# 文字入力
++type_text_2:
+  action>: TypeText
+  browser: +type_text_1
+  selector: '#tmpEmpStaffId'
+  text: DX23
+  clearValue: false
+  ignoreError: true
+
+# 文字入力
++type_text_3:
+  action>: TypeText
+  browser: +type_text_2
+  selector: '#empStaffPasswd'
+  text: '23regate!!'
+  clearValue: false
+  ignoreError: true
+
+# CAPTCHAを解決
++solve_captcha_1:
+  action>: SolveCaptcha
+  browser: +type_text_3
+  type: reCAPTCHA
+  executeCallback: true
+
+# クリック
++click_1:
+  action>: Click
+  browser: +type_text_3
+  selector: 'input[title="サービスに入る"]'
+  confirm: true
+  ignoreError: true

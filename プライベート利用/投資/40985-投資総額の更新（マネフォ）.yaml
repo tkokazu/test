@@ -1,0 +1,270 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: https://moneyforward.com/
+  lang: ja-JP
+  userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML,
+    like Gecko) Chrome/86.0.4240.80 Safari/537.36
+  headless: true
+
+# クリック
++click_2:
+  action>: Click
+  browser: "+open_browser_1"
+  selector: ".web-sign-in > a"
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+
+# クリック_mail
++click_1:
+  action>: Click
+  browser: "+open_browser_1"
+  selector: div.blockContent > a
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+
+# mlad
++inject_script_1:
+  action>: InjectScript
+  browser: "+click_1"
+  code: |
+    let input = document.querySelector('input[name="mfid_user[email]"]');
+    input.value = "taku.okazu@gmail.com";
+    setTimeout(() => document.querySelector('input[type="submit"]').click(), 1500);
+  returnValue: false
+
+# pswd
++type_password_1:
+  action>: TypePassword
+  browser: "+inject_script_1"
+  selector: input[name="mfid_user[password]"]
+  password: "********"
+  waitBefore: 3000
+  ignoreError: true
+
+# pswd
++inject_script_2:
+  action>: InjectScript
+  browser: "+inject_script_1"
+  code: 'setTimeout(() => document.querySelector(''input[type="submit"]'').click(),
+    1500);
+
+    '
+  waitAfter: 10000
+  returnValue: false
+
+# URLへ遷移
++go_to_1:
+  action>: GoTo
+  browser: "+inject_script_2"
+  url: https://moneyforward.com/bs/portfolio#portfolio_det_eq
+
+# 株式資産計算用 =>信用取引の額面を追加する
++inject_script_3:
+  action>: InjectScript
+  browser: "+go_to_1"
+  code: |
+    getTable = () => {
+      let array = [];
+      let table = document.querySelector("#portfolio_det_eq > table");
+      let rows = table.querySelectorAll("tr");
+      for (let row of rows) {
+        let col = row.querySelectorAll("td");
+        let data = Array.from(col).map(x => x.innerText);
+        if (!!data.length) {
+          array.push({
+            shoken_num: data[0],
+            company: data[1],
+            has_num: data[2],
+            average: data[3].replace(/\D/g, ""),
+            now: data[4].replace(/\D/g, ""),
+            all_price: data[5].replace(/\D/g, ""),
+            past_today: data[6].replace(/\D/g, ""),
+            gain_loss: data[7].replace(/[円\,]/g, ""),
+            per_gain_loss: data[8],
+            plece: data[9]
+          });
+        }
+      }
+      return array;
+    };
+
+    getMgnTable = () => {
+      let array = [];
+      let table = document.querySelector("#portfolio_det_mgn > table.table-mgn");
+      let rows = table.querySelectorAll("tr");
+      for (let row of rows) {
+        let col = row.querySelectorAll("td");
+        let data = Array.from(col).map(x => x.innerText);
+        if (!!data.length) {
+          array.push({
+            shoken_num: data[0],
+            company: data[1],
+            has_num: data[2],
+            average: data[3].replace(/\D/g, ""),
+            now: data[4].replace(/\D/g, ""),
+            past_today: data[5].replace(/\D/g, ""),
+            gain_loss: data[6].replace(/[円\,]/g, ""),
+            per_gain_loss: data[7],
+            plece: data[8]
+          });
+        }
+      }
+      let obj = mgnPrice();
+      let mgn_total = obj.data.map(x => x.total).join("+");
+      let result = {
+        mgn_now: parseInt(obj.now_price),
+        mgn_total: eval(mgn_total),
+        brand_data: array
+      };
+      return result;
+    };
+
+    mgnPrice = () => {
+      let array = [];
+      let table = document.querySelector("#portfolio_det_mgn > table");
+      let rows = table.querySelectorAll("tr");
+      for (let row of rows) {
+        let col = row.querySelectorAll("td");
+        let data = Array.from(col).map(x => x.innerText);
+        if (!!data.length) {
+          array.push({
+            plece: data[0],
+            name: data[1],
+            total: data[2].replace(/[円\,]/g, ""),
+            change: data[3],
+            delete: data[4]
+          });
+        }
+      }
+      let nowPriceEl = document.querySelector(
+        "#portfolio_det_mgn h1.heading-small"
+      );
+      return {
+        now_price: nowPriceEl.innerText.replace(/\D/g, ""),
+        data: array
+      };
+    };
+
+    getTotalPrice = () => {
+      let data = getTable().map(x => x.all_price); //現物
+      let mgn_data = getMgnTable().mgn_now; //信用
+      let total_fnc = data.join("+") + "+" + mgn_data;
+      return eval(total_fnc);
+    };
+
+    getTotalGainOrLoss = () => {
+      let data = getTable().map(x => {
+        let p = x.gain_loss;
+        return /\-/.test(p) == false ? "+" + p : p;
+      });
+
+      let mgn_data = getMgnTable().brand_data.map(x => {
+        let p = x.gain_loss;
+        return /\-/.test(p) == false ? "+" + p : p;
+      });
+      let gain_fnc = data.join(""); //現物
+      let gain_mgn_fnc = mgn_data.join(""); //信用
+      return eval(gain_fnc) + eval(gain_mgn_fnc);
+    };
+
+    async function getPrice(url) {
+      let promise = new Promise((resolve, reject) => {
+        let ajax = new XMLHttpRequest();
+        ajax.open("get", url);
+        ajax.responseType = "document";
+        ajax.onreadystatechange = e => {
+          if (e.target.readyState == 4) {
+            let doc = e.target.response;
+            let el = doc.querySelector("#portfolio_det_depo .number");
+            let res = !!el ? el.innerText.replace(/\D/g, "") : 0;
+            resolve(parseInt(res));
+          }
+        };
+        ajax.send();
+      });
+      return await promise;
+    }
+
+    async function main() {
+      let rakuten = "https://moneyforward.com/accounts/show/Nw2Z43JoER2mPOVwRCIsRA";
+      let line = "https://moneyforward.com/accounts/show/Ex9LER8gdCCA9RxAOv9euA";
+      return {
+        total: getTotalPrice(),
+        gain: getTotalGainOrLoss(),
+        money: {
+          rakuten: await getPrice(rakuten),
+          line: await getPrice(line)
+        }
+      };
+    }
+    main();
+  returnValue: true
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: portfolio
+  value: "+inject_script_3"
+
+# スクリプトを実行
++run_script_2:
+  action>: RunScript
+  code: |
+    portfolio.gain = "△" + portfolio.gain;
+    portfolio.gain = portfolio.gain.replace(/△\-/, "▲");
+    portfolio.money = portfolio.money.rakuten + portfolio.money.line;
+    portfolio.total = portfolio.total + portfolio.money;
+    return portfolio;
+
+# 変数に保存
++store_value_4:
+  action>: StoreValue
+  key: portfolio
+  value: "+run_script_2"
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5a2e4385349996c6a727
+  spreadsheet_id: 1gnBMcfKegu8PVr-Gx2vOjMl285tU1BSmM4DNTgxmsBc
+
+# セルの値を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: "+get_spreadsheet_1"
+  range: サマリー!A:A
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: data
+  value: "+get_cells_1"
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: |
+    let m = "${moment().utcOffset(540).format('YYYY-MM')}";
+    let row = null;
+    data.forEach((el, i) => {
+      if (el[0] === m) row = i + 1;
+    });
+    return row;
+
+# 変数に保存
++store_value_3:
+  action>: StoreValue
+  key: row
+  value: "+run_script_1"
+
+# セルの値を更新
++update_cells_1:
+  action>: UpdateCells
+  spreadsheet: "+get_spreadsheet_1"
+  range: サマリー!F${row}
+  values:
+  - "${portfolio.total}"
+  - "${portfolio.gain}"

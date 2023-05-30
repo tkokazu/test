@@ -1,0 +1,128 @@
+# HTTPリクエスト
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: https://raw.githubusercontent.com/dankogai/js-base64/main/base64.js
+  params: ''
+  method: GET
+  headers: ''
+  multipart: false
+
+# 変数に保存
++store_value_10:
+  action>: StoreValue
+  key: base
+  value: "+h_t_t_p_request_1"
+
+# 変数に保存_待機時間
++store_value_2:
+  action>: StoreValue
+  key: ms
+  value: "${Math.floor( Math.random () * 1500000) + 60000}"
+
+# スクリプトを実行_Lineに「検索条件設定してー」って通知する
++run_script_1:
+  action>: RunScript
+  code: |
+    let sec = String(ms / 1000).slice(-2);
+    let min = Math.floor(ms / 1000 / 60);
+    let body =
+      min + "分" + sec + "秒後に足跡をつけ始めます。\n検索条件を変更するよ。";
+    let json = {
+      to: "U21daa18779b0eb5f391a3327ea70d1ef",
+      messages: [
+        {
+          type: "text",
+          text: body
+        }
+      ]
+    };
+    return json;
+
+# 変数に保存
++store_value_3:
+  action>: StoreValue
+  key: line_body
+  value: "+run_script_1"
+
+# HTTPリクエスト
++h_t_t_p_request_2:
+  action>: HTTPRequest
+  url: https://api.line.me/v2/bot/message/push
+  params: "${JSON.stringify(line_body)}"
+  method: POST
+  headers:
+    Authorization: "********"
+    ContentType: application/json; charset=UTF-8
+  multipart: false
+
+# スクリプトを実行_起動する検索条件を決める
++run_script_2:
+  action>: RunScript
+  code: |
+    //関東：東北：その他 = 3 : 1 : 2
+    let workflow_id = {
+      kanto: 22367,
+      tohoku: 22646,
+      kansai: 22647,
+      another: 21918
+    };
+    let n = Math.floor(Math.random() * 7);
+    let key = ["kanto", "kanto", "tohoku", "another", "kanto", "kansai", "another"][
+      n
+    ];
+    return {
+      id: workflow_id[key],
+      param: {
+        cmFlag: Math.floor(Math.random() * 100)
+      }
+    };
+
+# 変数に保存（ランダムな検索条件）
++store_value_6:
+  action>: StoreValue
+  key: addToQueue
+  value: "+run_script_2"
+
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: https://tutorial.co.jp/
+  lang: ja-JP
+  headless: true
+
+# 1分間の待機時間
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: "+open_browser_1"
+  full_page: false
+  type: png
+  waitAfter: 60000
+
+# ワークフローを実行する_検索条件の設定を起動（関東/地方のランダム）
++add_to_queue_2:
+  action>: AddToQueue
+  workflow_id: "${addToQueue.id}"
+  params: "${addToQueue.param}"
+
+# paramsの作成→1〜30分の間でランダム
++inject_script_2:
+  action>: InjectScript
+  browser: "+open_browser_1"
+  code: |
+    ${base}
+    eval(Base64.decode("CmZ1bmN0aW9uIGNyZWF0ZUJvZHkoKXsKICBsZXQgdG9rZW4gPSAiSXJGVTAzMzlCbDllRkh2U3B2NkZ4QVpxTjRWTjVCL0FkRi9QMWx3QkZvNWJPaDlSb3Y2SjhZUkllL3Rtc3pzL0ttWDMvUWtTYmtCbzBwbTc3NDdEclRmNkFMUVlhZHVOKzZmc1dvWmtwQUczTDNDREx2bnZhMDRDemd5OGFIR25YZjU3WnNjNFRSZG93NWd0VldLM0p3ZEIwNHQ4OS8xTy93MWNEbnlpbEZVPSI7CiAgbGV0IGpzb24gPSB7IAogICAgYXBpX3N0b3JlVmFsdWUgOiAiVTIxZGFhMTg3NzliMGViNWYzOTFhMzMyN2VhNzBkMWVmIiAsCiAgICByY190b2tlbiA6IHsgCiAgICAgIENvbnRlbnRUeXBlOiAiYXBwbGljYXRpb24vanNvbjsgY2hhcnNldD1VVEYtOCIsCiAgICAgIEF1dGhvcml6YXRpb246ICJCZWFyZXIgIiArIHRva2VuCiAgICAgfQogICB9OwogIHJldHVybiBqc29uOwp9Cgo="))
+    createBody(); //これをuniccode変換
+  waitAfter: "${ms}"
+  returnValue: true
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: params
+  value: "+inject_script_2"
+
+# ワークフローを実行する_本体を起動
++add_to_queue_1:
+  action>: AddToQueue
+  workflow_id: 21383
+  params: "${params}"

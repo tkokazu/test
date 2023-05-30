@@ -1,0 +1,89 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://fellowtonaki:fellowtonaki1@js01.jposting.net/haier/agent/'
+  lang: 'ja-JP'
+  headless: true
+
+# クリック 詳細クリック
++click_1:
+  action>: Click
+  browser: +open_browser_1
+  selector: '#job_show_all'
+  confirm: true
+  ignoreError: true
+
+# スクレイピング 案件名
++scrape_page_1:
+  action>: ScrapePage
+  browser: +open_browser_1
+  selector: '.jobname'
+  text_only: false
+  ignoreError: true
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: jname
+  value: +scrape_page_1
+
+# 各要素について繰り返す
++for_each_1:
+  for_each>:
+    name: +scrape_page_1
+    withIndex: rowNum
+  _do:
+
+    # 変数に保存_案件名のセレクタから案件IDを取得
+    +store_value_2:
+      action>: StoreValue
+      key: name_id
+      value: ${name.selector.replace("#", "")}
+
+    # 要素を見つける_案件IDを元に案件詳細のテーブルデータのセレクタを作成してもらう
+    +find_element_1:
+      action>: FindElement
+      browser: +click_1
+      find_by: xpath
+      value: '//*[@id="${name_id}"]/../following-sibling::div/table'
+      timeout: 30000
+      visible: true
+
+    # 変数に保存_各案件の親要素セレクタ
+    +store_value_3:
+      action>: StoreValue
+      key: rowSelector
+      value: +find_element_1
+
+    # 強制終了
+    +kill_attempt_1:
+      action>: KillAttempt
+      message: ''
+
+    # テキストを取得　業務内容
+    +get_text_2:
+      action>: GetText
+      browser: +click_1
+      selector: '.gr_job_category_3 > :nth-child(1) > :nth-child(1) > :nth-child(1) > .jobborder > .jobtable > tbody > :nth-child(1) > .jobbg'
+      ignoreError: true
+
+    # テキストを取得　資格
+    +get_text_3:
+      action>: GetText
+      browser: +click_1
+      selector: '.gr_job_category_3 > :nth-child(1) > :nth-child(1) > :nth-child(1) > .jobborder > .jobtable > tbody > :nth-child(2) > .jobbg'
+      ignoreError: true
+
+    # テキストを取得　勤務地
+    +get_text_4:
+      action>: GetText
+      browser: +click_1
+      selector: '.gr_job_category_3 > :nth-child(1) > :nth-child(1) > :nth-child(1) > .jobborder > .jobtable > tbody > :nth-child(4) > .jobbg'
+      ignoreError: true
+
+    # テキストを取得　年収系
+    +get_text_5:
+      action>: GetText
+      browser: +click_1
+      selector: '.gr_job_category_3 > :nth-child(1) > :nth-child(1) > :nth-child(1) > .jobborder > .jobtable > tbody > :nth-child(5) > .jobbg'
+      ignoreError: true

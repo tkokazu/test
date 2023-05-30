@@ -1,0 +1,21 @@
+# ファイルを取得
++get_file_1:
+  action>: GetFile
+  provider: local
+  filename: rc_e42d75953a860671c18d
+  meta:
+    display:
+
+# ワークシートを選択
++select_sheet_1:
+  action>: SelectSheet
+  filename: +get_file_1
+  sheetname: Sheet1
+  middleware: xlsx
+
+# 範囲を読み込む
++read_range_1:
+  action>: ReadRange
+  worksheet: +select_sheet_1
+  range: E12
+  middleware: xlsx

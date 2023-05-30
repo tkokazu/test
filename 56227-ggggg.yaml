@@ -1,0 +1,5 @@
+# テキストを作成
++text_1:
+  action>: Text
+  text: ${moment().subtract('day', 10).format("YYYY/MM/DD")}
+  private: false

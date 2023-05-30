@@ -1,0 +1,19 @@
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "return {\n  stopData: [\n    {\n      name: \"渋谷\",\n      transfer: [\n        { company: \"東急\", line: \"東横線\" },\n        { company: \"JR\", line: \"山手線\" },\n        { company: \"JR\", line: \"埼京線\" },\n        { company: \"JR\", line: \"湘南新宿ライン\" },\n        { company: \"京王\", line: \"井の頭線\" },\n        { company: \"東京メトロ\", line: \"銀座線\" },\n        { company: \"東京メトロ\", line: \"副都心線\" }\n      ]\n    },\n    {\n      name: \"池尻大橋\",\n      transfer: []\n    },\n    {\n      name: \"三軒茶屋\",\n      transfer: { company: \"東急\", line: \"世田谷線\" }\n    }\n  ]\n};\n"
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: body
+  value: +run_script_1
+
+# HTTPリクエスト
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: 'https://hooks.zapier.com/hooks/catch/12561022/bff5is8/'
+  params: ${JSON.stringify(body)}
+  method: POST
+  headers: ''
+  multipart: false

@@ -1,0 +1,181 @@
+# 変数に保存
++store_value_5:
+  action>: StoreValue
+  key: s
+  value: ${new Date().getTime()}
+
+# ブラウザを開く_Google
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.google.co.jp/search?q=Pairs&glp=1&hl=JA&tci=g:2392&uule=w+CAIQICIFSmFwYW4&cr=countryJP&safe=images&safe=high&aqs=chrome.0.69i59j0l5.1861j0j7'
+  lang: 'ja-JP'
+  timeZone: 'Asia/Tokyo'
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100'
+  headless: true
+  plugins: ["stealth"]
+
+# ページにクッキーをセット
++import_cookies_1:
+  action>: ImportCookies
+  browser: +open_browser_1
+  id: '1aacbcd1-3ea4-450b-b62e-7cbf5fa2a082'
+
+# URLへ遷移
++go_to_2:
+  action>: GoTo
+  browser: +import_cookies_1
+  url: 'https://pairs.lv/search'
+  waitAfter: 5000
+
+# ページ内でJavaScriptを実行する
++inject_script_4:
+  action>: InjectScript
+  browser: +go_to_2
+  code: "document\n  .querySelectorAll(\"*\")\n  .forEach(x => (x.innerText === \"さがす画面に戻る\" ? x.click() : null));\n"
+  returnValue: false
+
+# ページ内でJavaScriptを実行する
++inject_script_5:
+  action>: InjectScript
+  browser: +inject_script_4
+  code: "let p = document.querySelectorAll(\"p\");\np.forEach(x => (x.innerText === \"あとで\" ? x.click() : null));\n"
+  waitBefore: 5000
+  returnValue: true
+
+# URLを取得_ログインできている確認
++get_u_r_l_1:
+  action>: GetURL
+  browser: +inject_script_4
+
+# 変数に保存 https://pairs.lv/search
++store_value_4:
+  action>: StoreValue
+  key: searchPage
+  value: +get_u_r_l_1
+
+# 真のとき_セッション切れてるとき
++if_1:
+  if>: ${!/search/.test(searchPage)}
+  _do:
+
+    # 強制終了
+    +kill_attempt_1:
+      action>: KillAttempt
+      message: 'cookieのセッション切れ'
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5a2e4385349996c6a727
+  spreadsheet_id: '1OZheVtOH_lEerGH5DkSDGqChWDPwe2NK4t-4Y7eWkro'
+
+# セルの値を取得_コミュニティ一覧の取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_1
+  range: 'community!A2:F'
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: sheet
+  value: +get_cells_1
+
+# スクリプトを実行_一番最短時間のやーつ
++run_script_1:
+  action>: RunScript
+  code: "sheet.forEach((x, i, arr) => (x[2] = i + 2));\nlet join = sheet.filter(x => x[5] == \"J\");\nlet remove = sheet.filter(x => x[5] == \"R\");\nreturn {\n  join: join,\n  remove: remove\n};\n"
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: data
+  value: +run_script_1
+
+# 各要素について繰り返す_退会
++for_each_2:
+  for_each>:
+    remove: ${data.remove}
+  _do:
+
+    # URLへ遷移
+    +go_to_3:
+      action>: GoTo
+      browser: +inject_script_4
+      url: 'https://pairs.lv/community/view/${remove[1]}'
+
+    # ページ内でJavaScriptを実行する
+    +inject_script_2:
+      action>: InjectScript
+      browser: +go_to_3
+      code: "let button = document.querySelector(\"div[class^='header-button'] > button\");\nlet text = button.innerText;\nif (text === \"コミュニティを退会する\") button.click();\n"
+      waitBefore: 5000
+      waitAfter: 5000
+      returnValue: false
+
+    # セルの値を更新_退会した日を書き込み
+    +update_cells_2:
+      action>: UpdateCells
+      spreadsheet: +get_spreadsheet_1
+      range: 'community!D${remove[2]}'
+      values: ${moment().utcOffset(540).format("YYYY-MM-DD")}
+
+# 各要素について繰り返す_参加
++for_each_1:
+  for_each>:
+    join: ${data.join}
+  _do:
+
+    # URLへ遷移
+    +go_to_1:
+      action>: GoTo
+      browser: +inject_script_4
+      url: 'https://pairs.lv/community/view/${join[1]}'
+
+    # 未参加であれば参加/参加済みであれば何もしない
+    +inject_script_1:
+      action>: InjectScript
+      browser: +go_to_1
+      code: "let button = document.querySelector(\"div[class^='header-button'] > button\");\nlet text = button.innerText;\nif (text === \"このコミュニティに参加する\") button.click();\n"
+      waitBefore: 5000
+      waitAfter: 5000
+      returnValue: false
+
+    # セルの値を更新_参加した日を書き込む
+    +update_cells_1:
+      action>: UpdateCells
+      spreadsheet: +get_spreadsheet_1
+      range: 'community!C${join[2]}'
+      values: ${moment().utcOffset(540).format("YYYY-MM-DD")}
+
+# URLへ遷移_自分の参加しているコミュニティ一覧
++go_to_4:
+  action>: GoTo
+  browser: +inject_script_4
+  url: 'https://pairs.lv/community/values/user_community_list/3AQTaduKvYWFUNdwZg1Utb3zr56m3HY3QqyJWgxEMRTf'
+
+# 参加済みのコミュニティーを取得_ここをサイトと同じ数の取得形式に変えたい
++inject_script_3:
+  action>: InjectScript
+  browser: +go_to_4
+  code: "function getCommunity() {\n  let cookie = document.cookie;\n  let token = document.cookie\n    .match(/(?<=pairs_token\\=).*/)[0]\n    .replace(/;.*/, \"\");\n  let url =\n    \"https://pairs.lv/1.0/user/3AQTaduKvYWFUNdwZg1Utb3zr56m3HY3QqyJWgxEMRTf/community?limit=50&offset=0&category_group=values,hobby,lifestyle&sort_by=created_at&sort_order=desc&groups_communities_by_category_group=true&device=pc&version=git-xxxxxxxx-v20190101123456\";\n  let ajax = new XMLHttpRequest();\n  ajax.open(\"get\", url, false);\n  ajax.setRequestHeader(\"pairs-token\", token);\n  ajax.setRequestHeader(\"accept\", \"application/json, text/plain, */*\");\n  ajax.send();\n  return JSON.parse(ajax.response);\n}\n\ngetCommunity();\n"
+  waitBefore: 5000
+  returnValue: true
+
+# 変数に保存
++store_value_3:
+  action>: StoreValue
+  key: communities
+  value: +inject_script_3
+
+# スクリプトを実行_既存のシートデータと突合
++run_script_2:
+  action>: RunScript
+  code: "let sheet_data = sheet.map(x => {\n  return { name: x[0], id: x[1] };\n});\nlet hobby = communities.hobby_instances;\nlet values = communities.values_instances;\nlet lifestyle = communities.lifestyle_instances;\nlet web_data = hobby.concat(values);\nweb_data = web_data.concat(lifestyle);\n\nlet res = [];\nfor (let obj of web_data) {\n  let s_check = sheet_data.filter(el => el.id == obj.id);\n  if (s_check.length == 0) {\n    res.push([\n      obj.name,\n      obj.id,\n      \"${moment().utcOffset(540).format('YYYY-MM-DD')}\"\n    ]);\n  }\n}\nreturn res;\n"
+
+# セルの値を更新
++update_cells_3:
+  action>: UpdateCells
+  spreadsheet: +get_spreadsheet_1
+  range: 'community!A${sheet.length + 2}'
+  values: +run_script_2

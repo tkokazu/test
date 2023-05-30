@@ -1,0 +1,56 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.instagram.com/explore/tags/%E3%83%A1%E3%83%B3%E3%82%BA%E3%83%95%E3%82%A1%E3%83%83%E3%82%B7%E3%83%A7%E3%83%B3/'
+  lang: 'ja-JP'
+  headless: true
+  windowSize: '1280 x 720'
+
+# ページにクッキーをセット
++import_cookies_1:
+  action>: ImportCookies
+  browser: +open_browser_1
+  id: '44c5d383-a1c3-43e8-994f-f00f2f9e432c'
+  meta:
+    display:
+      id:
+        label: 'instagram/菊地の本垢（怖いよー）'
+        icon: 'fa-cookie-bite'
+        type: chip
+
+# URLへ遷移
++go_to_1:
+  action>: GoTo
+  browser: +import_cookies_1
+  url: 'https://www.instagram.com/'
+  waitAfter: 5000
+
+# スクレイピング
++scrape_page_1:
+  action>: ScrapePage
+  browser: +go_to_1
+  selector: 'main > section ul > li[class] > div > button'
+  text_only: false
+  ignoreError: true
+
+# クリック
++click_1:
+  action>: Click
+  browser: +go_to_1
+  selector: 'main > section ul > li[class] > div > button'
+  confirm: true
+  ignoreError: true
+
+# 繰り返し
++loop_1:
+  loop>: 10
+  _do:
+
+    # スクリーンショットを撮る
+    +take_screenshot_1:
+      action>: TakeScreenshot
+      browser: +click_1
+      full_page: true
+      type: png
+      waitBefore: 2000
+      waitAfter: 10000

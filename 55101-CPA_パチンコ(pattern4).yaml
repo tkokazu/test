@@ -1,0 +1,33 @@
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: 'https://docs.google.com/spreadsheets/d/11ywYLE3mTgJCYW_sAlvT1NeqmvLW1SXYebvq4Mx91Fg/edit#gid=1402306132'
+  private: false
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_1
+  range: '加工前'
+  findAll: false
+  private: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: sheetData
+  value: +get_cells_1
+  private: false
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "/* \n * 配列を変換するクラス\n * \n * constructor\n * @param {string} store - 店舗名\n * @param {array} array - 変換前の二次元配列（シートのデータ）\n */\nclass FormatArray {\n  constructor(store, array) {\n    this.store_name = store;\n    this.base_array = this.getTargetRows(array);\n  }\n\n  /*\n     * 実行する処理\n     * @return {array} 変換後の二次元配列\n     */\n  parse() {\n    const parsed = [];\n    for (let row of this.base_array) {\n      const number = row[8];\n      const parseNum = this.createNumberArray(number);\n      console.log(parseNum);\n      parseNum.forEach(n =>\n        parsed.push([this.store_name, Number(n), row[1], row[2]])\n      );\n    }\n    return parsed;\n  }\n\n  /*\n     * 台番号が入力されている行のみを抽出\n     * @param {array} array - 変換前の二次元配列（シートのデータ）\n     * @return {array} 台番号が入力されている行のみの二次元配列\n     */\n  getTargetRows(array) {\n    return array.filter(row => {\n      if (row[8]) {\n        return row[8].match(/\\d/); //9列目に数字が含まれている\n      }\n    });\n  }\n\n  /*\n     * 数字を分割\n     * @param {string} numberString - 「65〜75」のような数字テキスト\n     * @return {array} [65,66,67,68...]のような数字リスト\n     */\n  createNumberArray(numberString) {\n    const stringArray = numberString.split(\",\");\n    const numbers = stringArray.map(str => {\n      let numbersResult = str.split(\"～\");\n      if (numbersResult.length > 1) {\n        const start = numbersResult[0];\n        const end = numbersResult[1];\n        numbersResult = this.parseNumber(start, end);\n      }\n      return numbersResult;\n    });\n    return numbers.flat();\n  }\n\n  /*\n     * 数字リストの生成\n     * @param {number} s - 開始の数字（型はString/Numberどっちでも可）\n     * @param {number} e - 終わりの数字（型はString/Numberどっちでも可）\n     * @return {array} 数字リスト\n     */\n  parseNumber(s, e) {\n    const parsedArray = [];\n    const loopCount = Number(e) - Number(s);\n    for (let i = 0; i < loopCount; i++) {\n      parsedArray.push(i + Number(s));\n    }\n    return parsedArray;\n  }\n}\n\n//メインの実行処理(例)\nconst obj = new FormatArray(\"店舗C\", sheetData);\nreturn obj.parse();\n"
+  private: false

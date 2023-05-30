@@ -1,0 +1,51 @@
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "return [[\"23853097836040561\", \"hogehoge\"]];\n"
+  private: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: testData
+  value: +run_script_1
+  private: false
+
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://autoro.io/'
+  lang: 'ja-JP'
+  headless: true
+  useShadowDomSelector: false
+  private: false
+
+# ページ内でJavaScriptを実行する
++inject_script_1:
+  action>: InjectScript
+  browser: +open_browser_1
+  code: "function createCsv(ss) {\n  var csv = \"\";\n  for (var i = 0; i < ss.length; i++) {\n    ss[i] = ss[i].map(function(x) {\n      x = /[\",\\r\\n]/.test(x) ? '\"' + x.replace(/\"/g, '\"\"') + '\"' : x;\n      return x;\n    });\n    csv += ss[i].join(\",\") + \"\\r\\n\";\n  }\n  return csv;\n}\n\nfunction dlcsv(array, name) {\n  var csv = createCsv(array);\n  var blob = new Blob([csv]);\n  var a = document.createElement(\"a\");\n  a.href = window.URL.createObjectURL(blob);\n  a.download = name + \".csv\";\n  a.click();\n}\ndlcsv(${JSON.stringify(testData)});\n${JSON.stringify(testData)};"
+  returnValue: true
+  private: false
+
+# ダウンロードファイル一覧
++get_download_files_1:
+  action>: GetDownloadFiles
+  order: ASC
+  sort_by: FILENAME
+  private: false
+
+# ファイルを保存
++save_file_1:
+  action>: SaveFile
+  provider: local
+  filename: +get_download_files_1
+  createPath: false
+  private: false
+
+# CSVを読み込む
++read_c_s_v_1:
+  action>: ReadCSV
+  filename: +get_download_files_1
+  headers: true
+  private: false

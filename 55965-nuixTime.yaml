@@ -1,0 +1,13 @@
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: test
+  value: ${moment(moment().subtract(1, "day").format("YYYY/MM/DD")).unix()}
+  private: false
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: ttt
+  value: ${moment(test * 1000).format("YYYY-MM-DD HH:mm:ss")}
+  private: false

@@ -1,0 +1,34 @@
+# テキストを作成
++text_1:
+  action>: Text
+  text: ${moment().utcOffset(540).format('YYYY/MM/DD HH:mm')}
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: 'https://docs.google.com/spreadsheets/d/1MmsjaOpF9Fd56GhdPpjDcvw1yYLOh2HWq7xn7Bo4ycE/edit#gid=1402306132'
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_1
+  range: '加工前'
+  findAll: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: sheetData
+  value: +get_cells_1
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "//台番号の分割（comma→waveで分割）\nfunction dataChecker(row) {\n  const checkedArray = [];\n\n  //commaで分割→ループ\n  const comma = row[8].split(\",\");\n  for (let obj of comma) {\n    const nums = obj.split(\"～\");\n    const startNum = nums[0];\n    const endNum = !!nums[1] ? nums[1] : nums[0];\n    console.log(\"s:\" + startNum + \"\\ne:\" + endNum);\n\n    //最初の数字に+1ずつ加算していく処理→最後の数字まで\n    let i = 0;\n    let num = Number(startNum);\n    do {\n      num = Number(startNum) + i;\n      checkedArray.push([storeName, num, row[1], row[2]]);\n      i = i + 1;\n    } while (num != Number(endNum));\n  }\n  return checkedArray;\n}\n\nconst resultData = [];\nconst storeName = \"店舗C\"; //店舗名\nconst targetRow = sheetData.filter(\n  //空の行、ヘッダー除去\n  row => !!row[1] && !!row[2] && row[8].match(/\\d/)\n);\n\n//メイン処理\nfor (let elm of targetRow) {\n  const numArray = dataChecker(elm);\n  numArray.forEach(x => resultData.push(x));\n}\nreturn resultData;\n"

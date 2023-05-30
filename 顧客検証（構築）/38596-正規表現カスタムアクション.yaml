@@ -1,0 +1,6 @@
+# 正規表現で検索
++match_text_1:
+  action>: MatchText
+  text: ${text}
+  regex: '(?<=${regex_1}).*(?=${regex_2})'
+  global: true

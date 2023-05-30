@@ -1,0 +1,5 @@
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "${\"const test = [1,2,3];return test\"}\n"
+  private: false

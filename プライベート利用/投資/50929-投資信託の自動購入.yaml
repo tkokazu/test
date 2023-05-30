@@ -1,0 +1,41 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: https://www.rakuten-sec.co.jp/ITS/V_ACT_Login.html
+  lang: ja-JP
+  headless: true
+  useShadowDomSelector: false
+
+# 文字入力
++type_text_1:
+  action>: TypeText
+  browser: "+open_browser_1"
+  selector: "#form-login-id"
+  text: UGGM4855
+  clearValue: false
+  ignoreError: true
+
+# パスワード入力
++type_password_1:
+  action>: TypePassword
+  browser: "+type_text_1"
+  selector: "#form-login-pass"
+  password: "********"
+  ignoreError: true
+
+# クリック_ログイン
++click_1:
+  action>: Click
+  browser: "+type_password_1"
+  selector: "#login-btn"
+  confirm: true
+  waitAfter: 5000
+  ignoreError: true
+  timeout: 30000
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: "+click_1"
+  full_page: false
+  type: png

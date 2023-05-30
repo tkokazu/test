@@ -1,0 +1,5 @@
+# テキストを作成
++text_1:
+  action>: Text
+  text: ${SESSION_TIME}
+  private: false

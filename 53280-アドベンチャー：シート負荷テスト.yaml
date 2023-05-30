@@ -1,0 +1,29 @@
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: 'https://docs.google.com/spreadsheets/d/1wwe96508hLUPhl5bwcf5kv8KxtO6L0Oee6eH2p3VRcQ/edit#gid=109076092'
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_1
+  range: 'Raw Data!G2:G'
+  findAll: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: flagCol
+  value: +get_cells_1
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "const media = {\n  rakuten: flagCol.filter(x => x[0] === \"楽天\").length,\n  skyticket: flagCol.filter(x => x[0] === \"Skyticket\").length\n};\nreturn media.rakuten != 0 && media.skyticket != 0;\n"

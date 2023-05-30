@@ -1,0 +1,176 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: https://note.com/login
+  lang: ja-JP
+  headless: true
+  useShadowDomSelector: false
+  private: false
+
+# Login
++inject_script_1:
+  action>: InjectScript
+  browser: "+open_browser_1"
+  code: |
+    var info = ["taku_okazu@yahoo.co.jp", "okazu288"];
+    info.forEach((x, i) => {
+      var s = ".space-bottom-1:nth-child(" + (i + 1) + ") > input";
+      var e = document.querySelector(s);
+      e.value = x;
+    });
+    document.querySelector("button > .logining_msg").click();
+  returnValue: false
+  private: false
+
+# note記事を開く
++go_to_1:
+  action>: GoTo
+  browser: "+inject_script_1"
+  url: "${note_url}"
+  waitBefore: 5000
+  private: false
+
+# テキストのみ取得（リンクは取らない）
++inject_script_2:
+  action>: InjectScript
+  browser: "+go_to_1"
+  code: |
+    var el = document.querySelector("article");
+    var h1 = el.querySelector("h1").innerText;
+    var content = el.querySelectorAll("h2,h3,p,blockquote");
+    var json = Array.from(content).map((x, i) => {
+      var tag = x.tagName;
+      var text = x.innerText;
+      if (x.querySelector("b")) {
+        var b = x.querySelector("b");
+        b.parentNode.removeChild(b);
+        text = "\n**" + b.innerText + "**\n";
+        text = text + x.innerText;
+      }
+      return { tag: tag, text: text, count: i };
+    });
+    var object = {};
+    object.body = json;
+    object.title = h1;
+    object;
+  waitBefore: 5000
+  returnValue: true
+  private: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: object
+  value: "+inject_script_2"
+  private: false
+
+# マークダウン形式に編集_15,000字までなら１枚のカードにおさまる
++run_script_1:
+  action>: RunScript
+  code: |
+    //confirmation of purchase
+    var h2 = object.body.filter(
+      x => x.tag === "H2" && x.text === "この続きをみるには"
+    );
+    var p = true;
+    if (!!h2.length) p = false;
+
+    //main.js
+    var head = (tag, text) => {
+      var n = tag.replace(/\D/g, "");
+      var hash = "";
+      for (var i = 0; i < parseInt(n); i++) hash = hash + "#";
+      return "\n" + hash + " " + text;
+    };
+    var array = object.body.map(x => {
+      var t = x.text;
+      if (/H/.test(x.tag)) t = head(x.tag, x.text);
+      return t;
+    });
+    var body = array.join("\n");
+
+    //confirmation of character count
+    var len = body.length;
+    var splitbody = [];
+    for (var i = 0; i < Math.ceil(len / 15000); i++) {
+      var s = i * 15000,
+        e = (i + 1) * 15000;
+      splitbody.push(body.substring(s, e));
+    }
+    return { raw: body, card: splitbody, purchased: p };
+  private: false
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: result
+  value: "+run_script_1"
+  private: false
+
+# 真のとき_購入済みのとき
++if_1:
+  if>: "${result.purchased}"
+  _do:
+
+    # 繰り返し
+    +loop_1:
+      loop>: "${result.card.length}"
+      _do:
+
+        # カードを作成_文字数に応じて作成枚数変化
+        +create_trello_card_1:
+          action>: CreateTrelloCard
+          provider: trello_6cccde48a6ced9adacc7
+          board: 自己管理
+          list: test
+          name: ${"【" + (i + 1) + "】 " + object.title}
+          description: "${result.card[i]}"
+          position: top
+          private: false
+
+# スクリプトを実行
++run_script_20:
+  action>: RunScript
+  code: |
+    var msg = "カードの作成が完了しました。\n\nTitle : " + object.title;
+    if (result.purchased == false) {
+      msg =
+        "未購入のnote\n\n" +
+        "Titile : " +
+        object.title +
+        "\n" +
+        "URL : " +
+        note_url +
+        "\n" +
+        "Login : taku_okazu@yahoo.co.jp";
+    }
+    var json = {
+      to: "U21daa18779b0eb5f391a3327ea70d1ef",
+      messages: [
+        {
+          type: "text",
+          text: msg
+        }
+      ]
+    };
+    return json;
+  private: false
+
+# 変数に保存
++store_value_20:
+  action>: StoreValue
+  key: body
+  value: "+run_script_20"
+  private: false
+
+# HTTPリクエスト
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: https://api.line.me/v2/bot/message/push
+  params: "${body}"
+  method: POST
+  headers:
+    Content-Type: application/json; charset=UTF-8
+    Authorization: "********"
+  multipart: false
+  private: false

@@ -1,0 +1,8 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.instagram.com/meshi__wo/'
+  lang: 'ja-JP'
+  headless: false
+  useShadowDomSelector: false
+  private: false

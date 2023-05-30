@@ -1,0 +1,15 @@
+# Googleカレンダーから予定を取得
++get_google_calendar_events_1:
+  action>: GetGoogleCalendarEvents
+  provider: gcalendar_247f16804e7c7c625818
+  calendar_id: 'kikuchi@tutorial.co.jp'
+  from: ${moment().utcOffset(540).format('YYYY-MM-DDT00:00:00Z')}
+  to: ${moment().utcOffset(540).format('YYYY-MM-DDT23:59:59Z')}
+  query: ''
+  maxResults: 250
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Googlecalendar (kikuchi@tutorial.co.jp)'
+        icon: googlecalendar

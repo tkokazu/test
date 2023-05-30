@@ -1,0 +1,22 @@
+# HTTPリクエスト
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: 'https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/1.0.30/encoding.js'
+  params: ''
+  method: GET
+  headers: ''
+  multipart: false
+  private: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: response
+  value: +h_t_t_p_request_1
+  private: false
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "\nEncoding = eval(response + \"Encoding\");\nvar csvData = \"13953-20210711115517-ëƒê≤É\\\\É┐üiö╠öäüEöäÅπüEÄdôⁿè╓ÿAüj .csv\";\nconst arr = new Uint8Array(csvData);\nconst rst = Encoding.convert(arr, {\n  to: \"UNICODE\",\n  from: \"SJIS\",\n  type: \"string\"\n});\nreturn rst;\n"
+  private: false

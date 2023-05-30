@@ -1,0 +1,139 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://portal.trustlogin.com/users/sign_in/password?new_session=true&user%5Bemail%5D=dx%40rext.work&user%5Bgroup_name%5D=rext&user%5Bpassword_is_set%5D=true'
+  lang: 'ja-JP'
+  headless: true
+
+# 文字入力
++type_text_1:
+  action>: TypeText
+  browser: +open_browser_1
+  selector: '#user_raw_password'
+  text: 'Rext$Work11'
+  clearValue: false
+  ignoreError: true
+
+# クリック
++click_1:
+  action>: Click
+  browser: +type_text_1
+  selector: '#submit'
+  confirm: true
+  ignoreError: true
+
+# クリック_LINE WORKSの起動
++click_2:
+  action>: Click
+  browser: +click_1
+  selector: 'li[title="LINE WORKS(SAML)"]'
+  confirm: true
+  ignoreError: true
+
+# 開いているタブを表示
++show_tabs_1:
+  action>: ShowTabs
+  browser: +click_2
+  waitBefore: 10000
+
+# URLへ遷移_投稿ページ
++go_to_1:
+  action>: GoTo
+  browser: +click_2
+  url: 'https://home.worksmobile.com/main/article/write?boardNo=0&t=38989'
+
+# クリック_投稿ボタン
++click_3:
+  action>: Click
+  browser: +go_to_1
+  selector: '.core_button > button'
+  confirm: true
+  ignoreError: true
+
+# クリック
++click_4:
+  action>: Click
+  browser: +click_3
+  selector: '.layer_area .option_box > ul > li:nth-child(2) > input'
+  confirm: true
+  ignoreError: true
+
+# クリック_ok
++click_5:
+  action>: Click
+  browser: +click_4
+  selector: '.layer_area > .board_select + .btn_area > button:nth-child(2)'
+  confirm: true
+  ignoreError: true
+
+# 文字入力_title
++type_text_2:
+  action>: TypeText
+  browser: +click_5
+  selector: '.wrap_sbj > input'
+  text: 'RPAで作成してみた記事'
+  clearValue: false
+  ignoreError: true
+
+# ファイルを取得
++get_file_1:
+  action>: GetFile
+  filename: rc_33086998d7b073d8877c
+  provider: local
+
+# フォームでファイルを送信
++set_file_to_upload_1:
+  action>: SetFileToUpload
+  browser: +click_5
+  selector: '#attachPhoto'
+  file: +get_file_1
+  waitAfter: 10000
+  ignoreError: true
+
+# ファイルを取得
++get_file_2:
+  action>: GetFile
+  filename: rc_995a692b6797066f9ded
+  provider: local
+
+# フォームでファイルを送信
++set_file_to_upload_2:
+  action>: SetFileToUpload
+  browser: +set_file_to_upload_1
+  selector: '#attachPhoto'
+  file: +get_file_2
+  waitAfter: 10000
+  ignoreError: true
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +set_file_to_upload_1
+  full_page: true
+  type: png
+  waitBefore: 5000
+
+# クリック
++click_6:
+  action>: Click
+  browser: +set_file_to_upload_2
+  selector: '.next > button > strong'
+  confirm: true
+  ignoreError: true
+
+# クリック
++click_7:
+  action>: Click
+  browser: +click_6
+  selector: '#send_msg'
+  confirm: true
+  ignoreError: true
+
+# クリック
++click_8:
+  action>: Click
+  browser: +click_7
+  selector: '.ct_layer > .alert > .btn_area > button:nth-child(2)'
+  confirm: true
+  waitAfter: 5000
+  ignoreError: true

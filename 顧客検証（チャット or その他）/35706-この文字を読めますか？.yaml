@@ -1,0 +1,20 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://tutorial.co.jp/'
+  lang: 'ja-JP'
+  headless: true
+
+# ファイルを取得
++get_file_1:
+  action>: GetFile
+  filename: rc_6327defd46c103658086
+  provider: local
+
+# CAPTCHAを解決
++solve_captcha_1:
+  action>: SolveCaptcha
+  browser: +open_browser_1
+  type: normal
+  file: +get_file_1
+  executeCallback: true

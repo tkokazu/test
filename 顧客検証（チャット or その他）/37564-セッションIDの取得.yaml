@@ -1,0 +1,17 @@
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: payload
+  value:
+    id: ${SESSION_QUEUE_ID}
+    result: 1
+
+# HTTPリクエスト
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: 'https://goline.jp/apis/rpa/finish/'
+  params: ${payload}
+  method: POST
+  headers:
+    Content-Type: 'application/json'
+  multipart: false

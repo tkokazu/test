@@ -1,0 +1,64 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.agoda.com/ja-jp/hotel-hankyu-respire-osaka/hotel/osaka-jp.html?finalPriceView=2&isShowMobileAppPrice=false&cid=1891462&numberOfBedrooms=&familyMode=false&adults=1&children=0&rooms=1&maxRooms=0&checkIn=2023-03-14&isCalendarCallout=false&childAges=&numberOfGuest=0&missingChildAges=false&travellerType=0&showReviewSubmissionEntry=false&currencyCode=JPY&isFreeOccSearch=false&tag=efb710c7-b4ed-e12a-863c-74cf84e7e7aa&isCityHaveAsq=false&tspTypes=16&los=1&searchrequestid=feeb3715-3290-4cac-96ed-53c40a393907'
+  lang: 'ja-JP'
+  headless: true
+  useShadowDomSelector: false
+  private: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: start
+  value: ${moment().unix()}
+  private: false
+
+# ページ内でJavaScriptを実行する
++inject_script_1:
+  action>: InjectScript
+  browser: +open_browser_1
+  code: "function createDate(n) {\n  const obj = new Date();\n  obj.setDate(obj.getDate() + n);\n  return {\n    y: obj.getFullYear(),\n    m: (\"00\" + (obj.getMonth() + 1)).slice(-2),\n    d: (\"00\" + obj.getDate()).slice(-2)\n  };\n}\n\nconst result = [];\nfor (let i = 0; i < 30; i++) {\n  const check_inDate = createDate(i);\n  const check_inDateString =\n    check_inDate.y + \"-\" + check_inDate.m + \"-\" + check_inDate.d;\n\n  const check_outDate = createDate(i + 1);\n  const check_outDateString =\n    check_outDate.y + \"-\" + check_outDate.m + \"-\" + check_outDate.d;\n  const endpoint =\n    \"https://www.agoda.com/api/cronos/property/BelowFoldParams/GetSecondaryData\" +\n    \"?finalPriceView=2\" +\n    \"&isShowMobileAppPrice=false\" +\n    \"&cid=1844104\" +\n    \"&numberOfBedrooms=\" +\n    \"&familyMode=false\" +\n    \"&adults=1\" +\n    \"&children=0\" +\n    \"&rooms=1\" +\n    \"&maxRooms=0\" +\n    \"&checkIn=\" +\n    check_inDateString +\n    \"&checkOut=\" +\n    check_outDateString +\n    \"&isCalendarCallout=false\" +\n    \"&childAges=\" +\n    \"&numberOfGuest=0\" +\n    \"&missingChildAges=false\" +\n    \"&travellerType=-1\" +\n    \"&showReviewSubmissionEntry=false\" +\n    \"&currencyCode=JPY\" +\n    \"&isFreeOccSearch=false\" +\n    \"&isCityHaveAsq=false\" +\n    \"&tspTypes=1\" +\n    \"&los=1\" +\n    \"&searchrequestid=dc7fc1f1-0f5a-4897-829e-06581f16ba64\" +\n    \"&hotel_id=6942282\" +\n    \"&all=false\" +\n    \"&price_view=2\" +\n    \"&sessionid=x45shygpbbkzvxl0pthle4ri\" +\n    \"&pagetypeid=7\";\n  const req = new XMLHttpRequest();\n  req.open(\"get\", endpoint, false);\n  req.setRequestHeader(\"cr-currency-code\", \"JPY\");\n  req.setRequestHeader(\"cr-currency-id\", \"11\");\n  req.setRequestHeader(\"ag-language-locale\", \"ja-jp\");\n  req.send();\n  const price = JSON.parse(req.response).inquiryProperty.cheapestPrice;\n  result.push({ date: check_inDateString, price: price });\n}\nconsole.log(result);\nresult;\n"
+  returnValue: true
+  private: false
+
+# 変数に保存_経過時間
++store_value_2:
+  action>: StoreValue
+  key: execTime
+  value: ${moment().unix() - start}
+  private: false
+
+# 変数に保存
++store_value_3:
+  action>: StoreValue
+  key: hotelData
+  value: +inject_script_1
+  private: false
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: 'return hotelData.map(x => [x.date, x.price]);'
+  private: false
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: 'https://docs.google.com/spreadsheets/d/16_P2KzsRxZfm9HGwRkiaMMYSfeeLyWkBfZApe3vKbIU/edit#gid=851701799'
+  private: false
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を更新
++update_cells_1:
+  action>: UpdateCells
+  spreadsheet: +get_spreadsheet_1
+  range: 'test!A1'
+  values: +run_script_1
+  private: false

@@ -1,0 +1,70 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://web.screen.rakuten.co.jp/app'
+  lang: 'ja-JP'
+  headless: true
+  windowSize: 400x899
+  useShadowDomSelector: false
+  private: false
+
+# クリック
++click_1:
+  action>: Click
+  browser: +open_browser_1
+  selector: body
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+  private: false
+
+# クリック
++click_2:
+  action>: Click
+  browser: +click_1
+  selector: body
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+  private: false
+
+# クリック
++click_3:
+  action>: Click
+  browser: +click_2
+  selector: body
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+  private: false
+
+# クリック
++click_4:
+  action>: Click
+  browser: +click_3
+  selector: body
+  confirm: true
+  waitBefore: 10000
+  ignoreError: true
+  timeout: 30000
+  private: false
+
+# クリック
++click_5:
+  action>: Click
+  browser: +click_4
+  selector: body
+  confirm: true
+  waitBefore: 3000
+  ignoreError: true
+  timeout: 30000
+  private: false
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +open_browser_1
+  full_page: false
+  type: png
+  waitBefore: 2000
+  private: false

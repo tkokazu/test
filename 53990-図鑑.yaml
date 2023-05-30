@@ -1,0 +1,103 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://yakkun.com/sv/zukan/#scrollTop=0'
+  lang: 'ja-JP'
+  headless: true
+  useShadowDomSelector: false
+  plugins: ["stealth"]
+  private: false
+
+# スクレイピング
++scrape_page_1:
+  action>: ScrapePage
+  browser: +open_browser_1
+  selector: 'ul.pokemon_list > li.haszukan > a[href^="/sv/zukan/n"]'
+  text_only: false
+  ignoreError: true
+  private: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: pokemonDataUrl
+  value: +scrape_page_1
+  private: false
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: '1TbcvjGyzk_PIr-h-mSDNOJRLk_qp-RIR4EYs8m94nW0'
+  private: false
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を更新
++update_cells_1:
+  action>: UpdateCells
+  spreadsheet: +get_spreadsheet_1
+  range: 'PokemonList!A1'
+  values: ${pokemonDataUrl.map(x => [x.innerText, x.href])}
+  private: false
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: result
+  value: {}
+  private: false
+
+# 各要素について繰り返す
++for_each_1:
+  for_each>:
+    pokemonUrl: +scrape_page_1
+  _do:
+
+    # URLへ遷移
+    +go_to_1:
+      action>: GoTo
+      browser: +open_browser_1
+      url: ${pokemonUrl.href}
+      private: false
+
+    # ページ内でJavaScriptを実行する
+    +inject_script_1:
+      action>: InjectScript
+      browser: +go_to_1
+      code: "/**\n * ポケモン徹底攻略SV図鑑（例：https://yakkun.com/sv/zukan/n184）\n * 各ポケモンの取得情報をまとめる\n * @constructor\n */\nclass pokemonSVData {\n  constructor() {\n    this.pokemonData = {};\n    this.wazaData = {};\n  }\n\n  /**\n   * 基本情報の各項目のCSSセレクタリスト\n   * @returns {Object} selectors list for infomation\n   */\n  infoSelectors() {\n    return {\n      name: 'table[summary=\"基本データ\"] tr:nth-child(1) > th',\n      icon: 'table[summary=\"基本データ\"] tr:nth-child(2) img',\n      class: 'table[summary=\"基本データ\"] tr:nth-child(3) > th',\n      paldea_No:\n        'table[summary=\"基本データ\"] tr:nth-child(4) > td:last-of-type',\n      No: 'table[summary=\"基本データ\"] tr:nth-child(5) > td:last-of-type',\n      higtht: 'table[summary=\"基本データ\"] tr:nth-child(6) > td:last-of-type',\n      weight: 'table[summary=\"基本データ\"] tr:nth-child(7) > td:last-of-type',\n      type_1:\n        'table[summary=\"基本データ\"] tr:nth-child(8) > td:last-of-type li:nth-child(1) > a > img',\n      type_2:\n        'table[summary=\"基本データ\"] tr:nth-child(8) > td:last-of-type li:nth-child(2) > a > img',\n      eng: 'table[summary=\"基本データ\"] tr:nth-child(9) > td:last-of-type'\n    };\n  }\n\n  /**\n   * 種族値項目のCSSセレクタリスト\n   * @returns {Object} Selectors list for Base stats\n   */\n  baseStatsSelectors() {\n    return {\n      HP: 'table[summary=\"詳細データ\"] tr:nth-child(2) > td:last-of-type',\n      attack: 'table[summary=\"詳細データ\"] tr:nth-child(3) > td:last-of-type',\n      defence: 'table[summary=\"詳細データ\"] tr:nth-child(4) > td:last-of-type',\n      special_attack:\n        'table[summary=\"詳細データ\"] tr:nth-child(5) > td:last-of-type',\n      special_defence:\n        'table[summary=\"詳細データ\"] tr:nth-child(6) > td:last-of-type',\n      speed: 'table[summary=\"詳細データ\"] tr:nth-child(7) > td:last-of-type',\n      ave_total: 'table[summary=\"詳細データ\"] tr:nth-child(8) > td:last-of-type'\n    };\n  }\n\n  /**\n   * 基本情報の取得に使うDOM属性の判定\n   * @param {String} key : Item name for infomation\n   * @returns function\n   */\n  infoFunctions(key) {\n    const fnc = {\n      _innerText: [\n        \"name\",\n        \"class\",\n        \"paldea_No\",\n        \"No\",\n        \"higtht\",\n        \"weight\",\n        \"eng\"\n      ],\n      _src: [\"icon\"],\n      _alt: [\"type_1\", \"type_2\"]\n    };\n    const text = fnc._innerText.indexOf(key);\n    if (text > -1) return \".innerText\";\n    const image = fnc._src.indexOf(key);\n    if (image > -1) return \".src\";\n    const alt = fnc._alt.indexOf(key);\n    if (alt > -1) return \".alt\";\n  }\n\n  /**\n   * テーブル行の位置指定（技の覚え方に応じて）\n   * @param {String} key : How to learn weapon\n   * @returns {Object} start ID & end ID\n   */\n  wazaType(key) {\n    const wazaType = {\n      level: {\n        s: \"level_move\",\n        e: \"machine_move\"\n      },\n      machine: {\n        s: \"machine_move\",\n        e: \"egg_move\"\n      },\n      egg: {\n        s: \"egg_move\",\n        e: \"reminder_move\"\n      },\n      reminder: {\n        s: \"reminder_move\",\n        e: \"pre_move\"\n      }\n    };\n    return wazaType[key];\n  }\n\n  /**\n   * 基本情報の取得\n   * @return {null} constractor.pokemonData.info\n   */\n  getInfoData() {\n    const info = {};\n    const infoElmData = this.infoSelectors();\n    const keys = Object.keys(infoElmData);\n    for (let key of keys) {\n      const fnc = this.infoFunctions(key);\n      const el = document.querySelector(infoElmData[key]);\n      info[key] = !!el ? eval(\"el\" + fnc) : \"\";\n    }\n    this.pokemonData.info = info;\n  }\n\n  /**\n   * タイプ相性の取得\n   * @return {null} constractor.pokemonData.type\n   */\n  getTypeData() {\n    const type = document.querySelectorAll(\"tr:nth-child(11) ul.type\");\n    const type_li = type[0].querySelectorAll(\"li\");\n    this.pokemonData.type = Array.from(type_li).map(el => {\n      const typeObj = {};\n      const img = el.querySelectorAll(\"img\");\n      typeObj.type = img[0].alt;\n      typeObj.ratio = img[1].alt;\n      return typeObj;\n    });\n  }\n\n  /**\n   * さかさバトルのタイプ相性取得\n   * @return {null} constractor.pokemonData.reverse_type\n   */\n  getReverseTypeData() {\n    const type = document.querySelectorAll(\"tr:nth-child(11) ul.type\");\n    const type_li = type[1].querySelectorAll(\"li\");\n    this.pokemonData.reverse_type = Array.from(type_li).map(el => {\n      const typeObj = {};\n      const img = el.querySelectorAll(\"img\");\n      typeObj.type = img[0].alt;\n      typeObj.ratio = img[1].alt;\n      return typeObj;\n    });\n  }\n\n  /**\n   * 進化先、進化前情報の取得\n   * @return {null} constractor.pokemonData.evo\n   *      @type {object} name / level\n   */\n  getEvoData() {\n    const evo = document.querySelectorAll(\".evo_list > li:not(.evo_arrow)\");\n    this.pokemonData.evo = Array.from(evo).map(el => {\n      const name = el.querySelector(\"a\").innerText;\n      const text = el.innerText;\n      return {\n        name: name,\n        lv: text\n      };\n    });\n  }\n\n  /**\n   * 種族値の取得\n   * @return {null} constractor.pokemonData.base_stats\n   *      @type {object} Number / ranking\n   */\n  getBaseStats() {\n    const stats = {};\n    const statsElmData = this.baseStatsSelectors();\n    const keys = Object.keys(statsElmData);\n    for (let key of keys) {\n      const el = document.querySelector(statsElmData[key]);\n      const text = el.innerText;\n      stats[key] = {\n        n: text.replace(/\\(.*\\)|\\s/g, \"\"),\n        rank: text.match(/\\d*(?=位)/)[0]\n      };\n    }\n    this.pokemonData.base_stats = stats;\n  }\n\n  /**\n   * 特性の取得\n   * @return {null} constractor.pokemonData.ability\n   */\n  getAbility() {\n    const resultAbility = {};\n\n    //特性と夢特性の行番号を調査\n    const rows = document.querySelectorAll('table[summary=\"詳細データ\"] tr');\n    const n_index = Array.from(rows).findIndex(row =>\n      row.innerText.match(/特性/)\n    );\n    const d_index = Array.from(rows).findIndex(row =>\n      row.innerText.match(/隠れ特性/)\n    );\n\n    //特性の数を数える\n    const abilityCount = d_index - (n_index + 1);\n\n    //通常特性\n    const abilities = [];\n    for (let i = 0; i < abilityCount; i++) {\n      const abilityName = rows[n_index + 1].querySelector(\"td:nth-child(1)\")\n        .innerText;\n      const abilityDesc = rows[n_index + 1].querySelector(\"td:nth-child(2)\")\n        .innerText;\n      abilities.push({\n        name: abilityName,\n        describe: abilityDesc\n      });\n    }\n    resultAbility.nomal = abilities;\n\n    //夢特性の有無を確認\n    const dreamCheck = rows[d_index + 1].innerText;\n    if (dreamCheck.trim() !== \"なし\") {\n      const dreamAbilityName = rows[d_index + 1].querySelector(\n        \"td:nth-child(1)\"\n      ).innerText;\n      const dreamAbilityDesc = rows[d_index + 1].querySelector(\n        \"td:nth-child(2)\"\n      ).innerText;\n      const d_ability = {\n        name: dreamAbilityName.replace(\"*\", \"\"),\n        describe: dreamAbilityDesc\n      };\n      resultAbility.dream = d_ability;\n    }\n    this.pokemonData.ability = resultAbility;\n  }\n\n  /**\n   * 覚える技一覧と技性能の取得\n   * @param {String} type_learn\n   * @return {null} constractor.wazaData\n   */\n  getWazaData(type_learn) {\n    const waza = [];\n    const wazaTable = document.querySelector(\"#move_list\");\n    const wazaRow = wazaTable.querySelectorAll(\"tr\");\n    const len = wazaRow.length;\n    const type = this.wazaType(type_learn);\n    const index = Array.from(wazaRow).findIndex(row => row.id === type.s);\n    let id = \"\";\n    let i = index == -1 ? 0 : index;\n\n    do {\n      const wazaLink = wazaRow[i].querySelector('a[href^=\"./search/?move=\"]');\n      if (!!wazaLink) {\n        const wazaData = {};\n        const wazaMethod = wazaRow[i].querySelector(\"td:nth-child(1)\")\n          .innerText;\n        wazaData.lv =\n          type_learn === \"level\" ? wazaMethod.replace(\"Lv.\", \"\") : \"\";\n        wazaData.machine =\n          type_learn === \"machine\" ? wazaMethod.replace(\"マシン\", \"\") : \"\";\n        wazaData.egg = type_learn === \"egg\" ? \"遺伝\" : \"\";\n        wazaData.remember = type_learn === \"reminder\" ? \"思い出し\" : \"\";\n        wazaData.name = wazaRow[i].querySelector(\n          \"td:nth-child(2) > a\"\n        ).innerText;\n        wazaData.type = wazaRow[i + 1].querySelector(\n          \"td:nth-child(1) > span\"\n        ).innerText;\n        wazaData.physics = wazaRow[i + 1].querySelector(\n          \"td:nth-child(2) > span\"\n        ).innerText;\n        wazaData.power = wazaRow[i + 1].querySelector(\n          \"td:nth-child(3)\"\n        ).innerText;\n        wazaData.accuracy = wazaRow[i + 1].querySelector(\n          \"td:nth-child(4)\"\n        ).innerText;\n        wazaData.pp = wazaRow[i + 1].querySelector(\"td:nth-child(5)\").innerText;\n        wazaData.direct = wazaRow[i + 1].querySelector(\n          \"td:nth-child(6)\"\n        ).innerText;\n        wazaData.disc = wazaRow[i + 1].querySelector(\n          \"td:nth-child(7)\"\n        ).innerText;\n        waza.push(wazaData);\n      }\n      id = wazaRow[i].id;\n      i = i + 1;\n    } while (id !== type.e && i != len);\n    this.wazaData[type_learn] = waza;\n  }\n}\n\n/**\n * JSONファイルをダウンロードする関数\n * @param {string} file_name : 指定のファイル名\n * @param {string} data : JSONの内容\n */\nfunction download_json(file_name, data) {\n  const blob = new Blob([JSON.stringify(data)], { type: \"application/json\" });\n  const url = URL.createObjectURL(blob);\n  const a = document.createElement(\"a\");\n  a.download = file_name;\n  a.href = url;\n  a.click();\n  a.remove();\n  URL.revokeObjectURL(url);\n}\n\n/**\n * コンストラクタの呼び出し\n */\nconst poke = new pokemonSVData();\npoke.getInfoData();\npoke.getTypeData();\npoke.getReverseTypeData();\npoke.getEvoData();\npoke.getBaseStats();\npoke.getAbility();\npoke.getWazaData(\"level\");\npoke.getWazaData(\"machine\");\npoke.getWazaData(\"egg\");\npoke.getWazaData(\"reminder\");\n\n/**\n * result json\n */\nconst result = {};\nresult.baseData = poke.pokemonData;\nresult.wazaData = poke.wazaData;\n\n//JSONファイルでダウンロード\nconst file = poke.pokemonData.info.paldea_No + \"_\" + poke.pokemonData.info.name;\ndownload_json(file + \".json\", result);\n"
+      returnValue: false
+      private: false
+
+    # ダウンロードファイル一覧
+    +get_download_files_1:
+      action>: GetDownloadFiles
+      order: DESC
+      sort_by: CREATED
+      private: false
+
+    # リストから要素を取得
+    +get_item_from_list_1:
+      action>: GetItemFromList
+      list: +get_download_files_1
+      index: '0'
+      private: false
+
+    # ファイルを保存
+    +save_file_1:
+      action>: SaveFile
+      provider: gdrive_84f6720bbe79235ff149
+      filename: +get_item_from_list_1
+      directory: '1hRZS2SHYwh3ah8SudRpypciuKYAnk-AE'
+      createPath: false
+      private: false
+      meta:
+        display:
+          provider:
+            type: chip
+            label: 'Google Drive (taku.okazu@gmail.com)'
+            icon: googledrive

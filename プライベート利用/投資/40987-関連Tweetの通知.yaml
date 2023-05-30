@@ -1,0 +1,118 @@
+# 変数に保存
++store_value_3:
+  action>: StoreValue
+  key: words
+  value:
+  - オークファン
+  - 'リスクモンスター '
+
+# 変数に保存_30分前
++store_value_1:
+  action>: StoreValue
+  key: times
+  value: ${moment().subtract(60, "minutes").format("YYYY/MM/DD HH:mm:ss")}
+
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: https://twitter.com/search?q=%E9%8E%8C%E5%80%89%E6%96%B0%E6%9B%B8&src=typed_query&f=live
+  lang: ja-JP
+  headless: true
+
+# ページにクッキーをセット
++import_cookies_1:
+  action>: ImportCookies
+  browser: "+open_browser_1"
+  id: 7d4fa72d-9f8e-43a7-b95d-7fcbfc8e1edf
+
+# 各要素について繰り返す
++for_each_2:
+  for_each>:
+    keyword: "${words}"
+  _do:
+
+    # URLへ遷移
+    +go_to_1:
+      action>: GoTo
+      browser: "+import_cookies_1"
+      url: https://twitter.com/search?q=${keyword}&src=typed_query&f=live
+      waitAfter: 10000
+
+    # Tweetを取得
+    +inject_script_1:
+      action>: InjectScript
+      browser: "+go_to_1"
+      code: |
+        let timestamp = new Date("${times}");
+
+        let tweetEl = document.querySelectorAll("section > div > div > div");
+        let tw = Array.from(tweetEl).filter(el => {
+          let time = el.querySelector("time");
+          if (!!time) {
+            let t = new Date(time.getAttribute("datetime")).getTime();
+            return t > timestamp.getTime();
+          }
+        });
+        tw = tw.map(x => [
+          x.innerText,
+          x.querySelector('a[href*="status"]').href,
+          x.querySelector("time").getAttribute("datetime")
+        ]);
+        if (tw.length != 0) {
+          tw.unshift([
+            "検索ワード：${keyword}",
+            "URL：https://twitter.com/search?f=tweets&q=${keyword}%20since%3A2018-12-31_14%3A59%3A59_JST%20until%3A2018-12-31_15%3A00%3A00_UTC&src=typd",
+            "時間：${times}-${moment().format('HH:mm:ss')}"
+          ]);
+        }
+        tw;
+      returnValue: true
+
+    # 変数に保存
+    +store_value_2:
+      action>: StoreValue
+      key: tweets
+      value: "+inject_script_1"
+
+    # 真のとき
+    +if_1:
+      if>: "${!!tweets.length}"
+      _do:
+
+        # 各要素について繰り返す_LINEに転送
+        +for_each_1:
+          for_each>:
+            tw: "+inject_script_1"
+          _do:
+
+            # スクリプトを実行
+            +run_script_20:
+              action>: RunScript
+              code: |
+                var json = {
+                  to: "U21daa18779b0eb5f391a3327ea70d1ef",
+                  messages: [
+                    {
+                      type: "text",
+                      text: tw.join("\n")
+                    }
+                  ]
+                };
+                return json;
+
+            # 変数に保存
+            +store_value_20:
+              action>: StoreValue
+              key: body
+              value: "+run_script_20"
+
+            # HTTPリクエスト_line
+            +h_t_t_p_request_1:
+              action>: HTTPRequest
+              url: https://api.line.me/v2/bot/message/push
+              params: "${JSON.stringify(body)}"
+              method: POST
+              headers:
+                Authorization: "********"
+                ContentType: application/json; charset=UTF-8
+              multipart: false

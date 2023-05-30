@@ -1,0 +1,84 @@
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5a2e4385349996c6a727
+  spreadsheet_id: '1lPDb-amka5GEw3weU_1WI1qu5SYR652nhKAPnhjG_uw'
+
+# ブラウザを開く_株価.com
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://jp.kabumap.com/servlets/kabumap/Action?SRC=marketList/base'
+  lang: 'ja-JP'
+  headless: true
+
+# クリック_全市場
++click_1:
+  action>: Click
+  browser: +open_browser_1
+  selector: '#exch_all'
+  confirm: true
+  ignoreError: true
+
+# ページ内でJavaScriptを実行する
++inject_script_1:
+  action>: InjectScript
+  browser: +click_1
+  code: "document.querySelector(\"#KM_TABLERESULTNUM0\").innerText.replace(/\\D/g, \"\");\n"
+  returnValue: true
+
+# 変数に保存_全銘柄数
++store_value_1:
+  action>: StoreValue
+  key: m
+  value: +inject_script_1
+
+# 変数に保存
++store_value_3:
+  action>: StoreValue
+  key: sheet_data
+  value: []
+
+# 繰り返し
++loop_1:
+  loop>: ${Math.ceil(parseInt(m) / 30)}
+  _do:
+
+    # テーブルデータを取得
+    +extract_data_from_table_1:
+      action>: ExtractDataFromTable
+      browser: +click_1
+      selector: '.KM_TABLECONTENT > table > tbody'
+      ignoreError: true
+
+    # 変数に保存
+    +store_value_2:
+      action>: StoreValue
+      key: data
+      value: +extract_data_from_table_1
+
+    # スクリプトを実行
+    +run_script_1:
+      action>: RunScript
+      code: "data.shift();\nreturn sheet_data.concat(data);\n"
+
+    # 変数に保存
+    +store_value_4:
+      action>: StoreValue
+      key: sheet_data
+      value: +run_script_1
+
+    # ページ内でJavaScriptを実行する
+    +inject_script_2:
+      action>: InjectScript
+      browser: +click_1
+      code: "let el = document.querySelector(\".KM_TABLEINDEX_ARROW:last-of-type > a\");\nif (!!el) {\n  let url = el.href;\n  location.href = url;\n}\n"
+      waitBefore: 7500
+      waitAfter: 7500
+      returnValue: false
+
+# セルの値を更新
++update_cells_1:
+  action>: UpdateCells
+  spreadsheet: +get_spreadsheet_1
+  range: 'diary/Price!A2'
+  values: ${sheet_data}

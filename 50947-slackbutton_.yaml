@@ -1,0 +1,43 @@
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "return undefined;\n"
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: hoge
+  value: +run_script_1
+
+# Slackでメッセージを送信
++send_slack_message_1:
+  action>: SendSlackMessage
+  provider: slack_b3fc6bfd665d97038021
+  channel: '#times_kikuchi'
+  text: 'undefinedの値がStringで渡される？'
+  buttons: [{"style":null,"type":"button","text":{"type":"plain_text","text":"ok"},"value":"{\"workflow_id\":50948,\"response_params\":{\"responseText\":\"${hoge}\"}}"},{"style":null,"type":"button","text":{"type":"plain_text","text":"ng"},"value":"{\"workflow_id\":50948,\"response_params\":{\"responseText\":\"ng\"}}"}]
+  send_select: false
+  response_message: false
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Slack (Tutorial Inc.)'
+        icon: slack
+      buttons:
+        type: buttons
+        buttons:
+          - type: button
+            label: ok
+            value:
+              workflow_id: 50948
+              response_params:
+                responseText: ${hoge}
+            color: null
+          - type: button
+            label: ng
+            value:
+              workflow_id: 50948
+              response_params:
+                responseText: ng
+            color: null

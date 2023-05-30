@@ -1,0 +1,12 @@
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "return [\n  {\n    result: [{ test: \"\" }, { test: \"hgoehoge\" }]\n  },\n  {\n    result: []\n  }\n];\n"
+
+# JSONを配列に変換
++convert_j_s_o_n_to_array_1:
+  action>: ConvertJSONToArray
+  json: +run_script_1
+  header: ["result.test"]
+  unwind: []
+  stringify: []

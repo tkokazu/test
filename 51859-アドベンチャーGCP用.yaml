@@ -1,0 +1,171 @@
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: ${sheet_id}
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_1
+  range: 'Raw Data!A2:H'
+  findAll: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: sheetRawData
+  value: +get_cells_1
+
+# 変数に保存
++store_value_6:
+  action>: StoreValue
+  key: rawData
+  value: []
+
+# 各要素について繰り返す_RawData自体の整形
++for_each_1:
+  for_each>:
+    provider_id: ${targetHotelList}
+  _do:
+
+    # スクリプトを実行
+    +run_script_2:
+      action>: RunScript
+      code: "return sheetRawData.filter(x => {\n  return x[1] == provider_id;\n});\n"
+
+    # 変数に保存_特定のホテルのデータだけ抽出
+    +store_value_7:
+      action>: StoreValue
+      key: targetRawData
+      value: +run_script_2
+
+    # スクリプトを実行
+    +run_script_4:
+      action>: RunScript
+      code: "targetRawData.forEach(x => x.pop());\nconst sortData = [...new Set(targetRawData.map(JSON.stringify))].map(\n  JSON.parse\n);\nreturn rawData.concat(sortData);\n"
+
+    # 変数に保存
+    +store_value_8:
+      action>: StoreValue
+      key: rawData
+      value: +run_script_4
+
+# 変数に保存_全都道府県をまとめる空配列
++store_value_5:
+  action>: StoreValue
+  key: hotelData
+  value: []
+
+# 各要素について繰り返す_各ホテルごと
++for_each_2:
+  for_each>:
+    key: ${targetHotelList}
+  _do:
+
+    # スクリプトを実行_楽天ベースの抽出だけやる
+    +run_script_1:
+      action>: RunScript
+      code: "//ホテル名, Property ID, 日付, 人数, 食事有無, 楽天最安値, SkyTicket最安値\nconst keyAllData = rawData.filter(x => x[1] === key);\nconst rakuten = keyAllData.filter(x => x[6] === \"楽天\");\nconst skyTicket = keyAllData.filter(x => x[6] === \"Skyticket\");\n\n//楽天ベースでの検証\nfor (let rakutenRow of rakuten) {\n  const skyRow = skyTicket.filter(\n    row =>\n      row[2] === rakutenRow[2] && //Date\n      row[3] === rakutenRow[3] && //人数\n      row[4] === rakutenRow[4] //食事有無\n  );\n  rakutenRow[6] = skyRow.length == 0 ? 0 : skyRow[0][5];\n  hotelData.push(rakutenRow);\n}\nreturn hotelData;\n"
+
+    # 変数に保存_楽天ベースの処理完了データ
+    +store_value_2:
+      action>: StoreValue
+      key: hotelData
+      value: +run_script_1
+
+    # スクリプトを実行_SkyTicketの処理だけやる
+    +run_script_3:
+      action>: RunScript
+      code: "//ホテル名, Property ID, 日付, 人数, 食事有無, 楽天最安値, SkyTicket最安値\nconst keyAllData = rawData.filter(x => x[1] === key);\nconst rakuten = keyAllData.filter(x => x[6] === \"楽天\");\nconst skyTicket = keyAllData.filter(x => x[6] === \"Skyticket\");\n\n//SkyTicketベースでの検証\nfor (let stRow of skyTicket) {\n  const r_row = rakuten.filter(\n    row =>\n      row[2] === stRow[2] && //Date\n      row[3] === stRow[3] && //人数\n      row[4] === stRow[4] //食事有無\n  );\n  if (r_row.length == 0) {\n    stRow[6] = stRow[5];\n    stRow[5] = 0;\n    hotelData.push(stRow);\n  }\n}\nreturn hotelData;\n"
+
+    # 変数に保存_SkyTicketベースの処理完了データ
+    +store_value_3:
+      action>: StoreValue
+      key: hotelData
+      value: +run_script_3
+
+# CSVを作成
++write_c_s_v_1:
+  action>: WriteCSV
+  filename: '${fileName}.csv'
+  table: ${hotelData}
+  bom: true
+
+# ファイルを保存
++save_file_1:
+  action>: SaveFile
+  provider: local
+  filename: +write_c_s_v_1
+  createPath: false
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_2:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: 'https://docs.google.com/spreadsheets/d/1dY3LFLUY-joMWb7uCun5AjtjKwDNd8-VTxgrzQcw_nE/edit#gid=68839887'
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を取得_フラグ部分の取得
++get_cells_2:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_2
+  range: '都道府県別優先度!H${rowNum}:K${rowNum}'
+  findAll: false
+
+# 変数に保存
++store_value_4:
+  action>: StoreValue
+  key: flagData
+  value: +get_cells_2
+
+# スクリプトを実行_完了リストにファイル番号追加
++run_script_5:
+  action>: RunScript
+  code: "const doneList = flagData[0][1].split(\",\").filter(x => !!x);\ndoneList.push(fileNum);\nconst doneStr = doneList\n  .sort((a, b) => (Number(a) > Number(b) ? 1 : -1))\n  .join(\",\");\nreturn [doneStr, doneList.length];\n"
+
+# セルの値を更新_I列の更新
++update_cells_1:
+  action>: UpdateCells
+  spreadsheet: +get_spreadsheet_2
+  range: '都道府県別優先度!I${rowNum}'
+  values: +run_script_5
+
+# 待機する
++wait_1:
+  action>: Wait
+  time: 3000
+
+# セルの値を取得_削除フラグ取得
++get_cells_3:
+  action>: GetCells
+  spreadsheet: +update_cells_1
+  range: '都道府県別優先度!K${rowNum}'
+  findAll: false
+
+# 変数に保存
++store_value_9:
+  action>: StoreValue
+  key: deleteFlag
+  value: +get_cells_3
+
+# 真のとき_trueであれば削除する
++if_1:
+  if>: ${deleteFlag[0][0] == true}
+  _do:
+
+    # テキストを作成
+    +text_1:
+      action>: Text
+      text: "削除フラグTRUEであれば都道府県シートのRawDateシートをすべて空にする\n削除されました！！！"

@@ -1,0 +1,63 @@
+# ブラウザを開く／ビズリーチ
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://es-support.jp/v1/login'
+  lang: 'ja-JP'
+  timeZone: 'Asia/Tokyo'
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15'
+  headless: true
+  plugins: ["stealth"]
+
+# 文字入力／メールアドレス
++type_text_2:
+  action>: TypeText
+  browser: +open_browser_1
+  selector: '#login-form-email-input'
+  text: 'bizreach@visionary-inc.com'
+  clearValue: false
+  waitAfter: 3000
+  ignoreError: true
+
+# 文字入力
++type_text_1:
+  action>: TypeText
+  browser: +type_text_2
+  selector: '#login-form-password-input'
+  text: shuyd8af8d8y0
+  clearValue: false
+  waitAfter: 3000
+  ignoreError: true
+
+# CAPTCHAを解決
++solve_captcha_1:
+  action>: SolveCaptcha
+  browser: +type_text_1
+  type: reCAPTCHA
+  executeCallback: true
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: token
+  value: +solve_captcha_1
+
+# ページ内でJavaScriptを実行する
++inject_script_1:
+  action>: InjectScript
+  browser: +type_text_1
+  code: "const cookie = document.cookie;\nconst cookieElements = cookie.split(\"; \");\nconst xsrfTokenCookie = cookieElements.find(el => el.includes(\"XSRF-TOKEN\"));\nconst xsrfToken = xsrfTokenCookie.split(\"=\")[1];\n\n// query を作成\nlet query = {\n  operationName: \"Login\",\n  variables: {\n    input: {\n      mail: \"hoge@example.com\",\n      password: \"hogehogehoge\",\n      rememberMe: false,\n      gRecaptchaResponse: \"v3:${token}\"\n    }\n  },\n  query:\n    \"mutation Login($input: LoginInput!) {\\n  login(input: $input) {\\n    code\\n    __typename\\n  }\\n}\\n\"\n};\n\n// request を作成、実行\nlet request = new XMLHttpRequest();\nrequest.open(\"POST\", \"https://es-support.jp/v1/graphql\", false);\nrequest.setRequestHeader(\"content-type\", \"application/json\");\nrequest.setRequestHeader(\"x-xsrf-token\", xsrfToken);\nrequest.send(JSON.stringify(query));\nrequest.response;\n"
+  returnValue: true
+
+# URLへ遷移
++go_to_1:
+  action>: GoTo
+  browser: +type_text_1
+  url: 'https://es-support.jp/v1/recruiters'
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +go_to_1
+  full_page: true
+  type: png
+  waitBefore: 3000

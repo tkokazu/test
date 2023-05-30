@@ -1,0 +1,9 @@
+# HTTPリクエスト
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: 'things:///add?titles=ojhohohoho&notes=ijiji'
+  params: ''
+  method: POST
+  headers:
+    auth-token: mNWjc5pKTh28hgOhHLdWlw
+  multipart: false

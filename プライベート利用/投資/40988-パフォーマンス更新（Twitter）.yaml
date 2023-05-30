@@ -1,0 +1,90 @@
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5a2e4385349996c6a727
+  spreadsheet_id: 1gnBMcfKegu8PVr-Gx2vOjMl285tU1BSmM4DNTgxmsBc
+
+# セルの値を取得_今日の結果を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: "+get_spreadsheet_1"
+  range: サマリー!I1
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: pafo
+  value: "+get_cells_1"
+
+# ブラウザを開く_Twitterログイン画面
++open_browser_1:
+  action>: OpenBrowser
+  url: https://www.minpafo.com/
+  lang: ja-JP
+  headless: true
+
+# クリック_twitterでログイン
++click_6:
+  action>: Click
+  browser: "+open_browser_1"
+  selector: ".button1"
+  confirm: true
+  ignoreError: true
+
+# 文字入力
++type_text_3:
+  action>: TypeText
+  browser: "+click_6"
+  selector: "#username_or_email"
+  text: okazu_invest
+  clearValue: false
+  ignoreError: true
+
+# パスワード入力
++type_password_3:
+  action>: TypePassword
+  browser: "+type_text_3"
+  selector: "#password"
+  password: "********"
+  ignoreError: true
+
+# クリック_ログイン
++click_7:
+  action>: Click
+  browser: "+type_password_3"
+  selector: "#allow"
+  confirm: true
+  waitAfter: 5000
+  ignoreError: true
+
+# クリック_資産入力
++click_8:
+  action>: Click
+  browser: "+click_7"
+  selector: ".aaa2"
+  confirm: true
+  ignoreError: true
+
+# 文字入力_資産額
++type_text_2:
+  action>: TypeText
+  browser: "+click_8"
+  selector: "#asset"
+  text: "${pafo[0][0]}"
+  clearValue: false
+  ignoreError: true
+
+# クリック_登録
++click_9:
+  action>: Click
+  browser: "+type_text_2"
+  selector: button
+  confirm: true
+  ignoreError: true
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: "+click_9"
+  full_page: false
+  type: png

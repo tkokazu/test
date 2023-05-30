@@ -1,0 +1,19 @@
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: spreadvalue
+  value: '検：,認：'
+  private: false
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: sheetData
+  value: [["店舗名","”台番号(加工後データ)”","検定番号(加工後データ)","型式名(加工後データ)"],["○○店","1","0P1742","検：Ｐスーパー海物語ＩＮ沖縄５ＬＴＶ"],["○○店","2","0P1742","認：Ｐスーパー海物語ＩＮ沖縄５ＬＴＶ"],["○○店","3","0P1742","検：Ｐスーパー海物語ＩＮ沖縄５ＬＴＶ"]]
+  private: false
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "const value = spreadvalue.replace(\",\", \"|\");\nreturn sheetData.map(row => {\n  for (let i = 0; i < row.length; ++i) {\n    row[i] = row[i].replace(new RegExp(value, \"g\"), \"\");\n  }\n return row;\n});"
+  private: false

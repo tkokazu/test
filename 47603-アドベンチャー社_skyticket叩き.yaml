@@ -1,0 +1,82 @@
+# テキストを作成
++text_1:
+  action>: Text
+  text: 'https://skyticket.jp/hotel/result?blocks_id=18966&check_in_date=20220629&check_out_date=20220630&occupancy=1'
+
+# 正規表現で検索
++match_text_1:
+  action>: MatchText
+  text: +text_1
+  regex: '(?<=blocks_id\=).*(?=&check_in_date)'
+  global: true
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: block_id
+  value: +match_text_1
+
+# HTTPリクエスト_ホテル情報
++h_t_t_p_request_2:
+  action>: HTTPRequest
+  url: 'https://skyticket.jp/hotel/api/v3/hotels/area/property?application_cd=0&blocks_id=${block_id}&input_ref=suggest&search_limit=1000&search_offset=0&type=&is_dp=false&is_tour=false&sort='
+  params: ''
+  method: GET
+  headers: ''
+  multipart: false
+
+# 変数に保存
++store_value_3:
+  action>: StoreValue
+  key: hotel_info
+  value: +h_t_t_p_request_2
+
+# 繰り返し
++loop_1:
+  loop>: 90
+  _do:
+
+    # 変数に保存_チェックイン日
+    +store_value_4:
+      action>: StoreValue
+      key: check_in
+      value: ${moment().add(i + 1, 'days').utcOffset(540).format("YYYY-MM-DD")}
+
+    # 変数に保存
+    +store_value_5:
+      action>: StoreValue
+      key: check_out
+      value: ${moment().add(i + 2, 'days').utcOffset(540).format("YYYY-MM-DD")}
+
+    # テキストを作成
+    +text_2:
+      action>: Text
+      text: 'https://skyticket.jp/hotel/api/v3/hotels/area/price?air_arrival_latitude=&air_arrival_longitude=&air_cm_application_id=&occupancy=2&rate_plan_count=100&sales_channel=website&goto_residence=&sold_out=false&check_in_date=${check_in}&check_out_date=${check_out}&application_cd=0&blocks_id=${block_id}&input_ref=suggest&search_limit=1000&search_offset=0&type=&is_dp=false&is_tour=false&sort='
+
+    # HTTPリクエスト_プラン情報
+    +h_t_t_p_request_1:
+      action>: HTTPRequest
+      url: 'https://skyticket.jp/hotel/api/v3/hotels/area/price?air_arrival_latitude=&air_arrival_longitude=&air_cm_application_id=&occupancy=2&rate_plan_count=100&sales_channel=website&goto_residence=&sold_out=false&check_in_date=${check_in}&check_out_date=${check_out}&application_cd=0&blocks_id=${block_id}&input_ref=suggest&search_limit=1000&search_offset=0&type=&is_dp=false&is_tour=false&sort='
+      params: ''
+      method: GET
+      headers: ''
+      multipart: false
+
+    # 変数に保存
+    +store_value_2:
+      action>: StoreValue
+      key: plan_info
+      value: +h_t_t_p_request_1
+
+    # スクリプトを実行_JSONをきれいにする
+    +run_script_1:
+      action>: RunScript
+      code: "const key = Object.keys(plan_info.body);\nconst plan_data = key.map(x => {\n  let data = plan_info.body[x];\n  data.hotel_info = hotel_info.body[x];\n  data.check_in_date = check_in;\n  data.check_out_date = check_out;\n  return data;\n});\nreturn plan_data;\n"
+
+    # JSONを配列に変換
+    +convert_j_s_o_n_to_array_1:
+      action>: ConvertJSONToArray
+      json: +run_script_1
+      header: ["hotel_info.address.name","lowest_price","check_in_date","check_out_date"]
+      unwind: []
+      stringify: []

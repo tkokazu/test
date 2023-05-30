@@ -1,0 +1,70 @@
+# アイテム一覧を取得
++list_items_1:
+  action>: ListItems
+  provider: gdrive_574e5ae157a9acc78d21
+  directory: '1_BcAtDcJ3T-QF82S9ujOUX7vlx0Eimi7'
+  limit: 1000
+  private: false
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Drive (kikuchi@tutorial.co.jp)'
+        icon: googledrive
+      directory:
+        label: 'アドベンチャーCSV'
+        icon: folder
+        type: chip
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: zip
+  value: []
+  private: false
+
+# 各要素について繰り返す
++for_each_1:
+  for_each>:
+    file: +list_items_1
+  _do:
+
+    # ファイルを取得
+    +get_file_1:
+      action>: GetFile
+      provider: gdrive_574e5ae157a9acc78d21
+      filename: ${file}
+      private: false
+      meta:
+        display:
+          provider:
+            type: chip
+            label: 'Google Drive (kikuchi@tutorial.co.jp)'
+            icon: googledrive
+
+    # 変数に保存
+    +store_value_1:
+      action>: StoreValue
+      key: csvFile
+      value: +get_file_1
+      private: false
+
+    # スクリプトを実行
+    +run_script_1:
+      action>: RunScript
+      code: "zip.push(csvFile);\n"
+      private: false
+
+# ファイルを圧縮する
++compress_file_1:
+  action>: CompressFile
+  files: ${zip}
+  private: false
+
+# ファイルを保存
++save_file_1:
+  action>: SaveFile
+  provider: local
+  filename: +compress_file_1
+  createPath: false
+  private: false

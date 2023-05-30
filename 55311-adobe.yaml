@@ -1,0 +1,37 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://creativecloud.adobe.com/ja'
+  lang: 'ja-JP'
+  headless: true
+  useShadowDomSelector: false
+  private: false
+
+# ページにクッキーをセット
++import_cookies_1:
+  action>: ImportCookies
+  browser: +open_browser_1
+  id: 'daff5498-7c78-4ae8-aba5-320e13b1de18'
+  private: false
+  meta:
+    display:
+      id:
+        label: adobe
+        icon: 'fa-cookie-bite'
+        type: chip
+
+# URLへ遷移
++go_to_1:
+  action>: GoTo
+  browser: +import_cookies_1
+  url: 'https://creativecloud.adobe.com/cc?locale=ja'
+  private: false
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +go_to_1
+  full_page: true
+  type: png
+  waitBefore: 5000
+  private: false

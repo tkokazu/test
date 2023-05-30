@@ -1,0 +1,53 @@
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: blank
+  value: []
+
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://item.rakuten.co.jp/f082244-moriya/55840538/'
+  lang: 'ja-JP'
+  headless: true
+  plugins: ["stealth"]
+
+# 繰り返し
++loop_1:
+  loop>: 10
+  _do:
+
+    # URLへ遷移
+    +go_to_1:
+      action>: GoTo
+      browser: +open_browser_1
+      url: 'https://item.rakuten.co.jp/f082244-moriya/55840538/'
+
+    # テキストを取得
+    +get_text_1:
+      action>: GetText
+      browser: +go_to_1
+      selector: body
+      ignoreError: true
+
+    # 正規表現で検索
+    +match_text_1:
+      action>: MatchText
+      text: +get_text_1
+      regex: 'アクセスが集中'
+      global: true
+
+    # 変数に保存
+    +store_value_2:
+      action>: StoreValue
+      key: bodyText
+      value: +match_text_1
+
+    # 繰り返しを終了する
+    +break_if_1:
+      break_if>: ${!bodyText}
+
+# スクリプトを実行
++run_script_2:
+  action>: RunScript
+  code: "return blank;\n"

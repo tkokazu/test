@@ -1,0 +1,29 @@
+# テキストを作成_確認
++text_1:
+  action>: Text
+  text: ${responseText}
+
+# 真のとき
++if_3:
+  if>: ${!!responseText}
+  _do:
+
+    # 真のとき
+    +if_1:
+      if>: ${responseText === "ok"}
+      _do:
+
+        # テキストを作成
+        +text_2:
+          action>: Text
+          text: 'okでした'
+
+    # 真のとき
+    +if_2:
+      if>: ${responseText === "ng"}
+      _do:
+
+        # テキストを作成
+        +text_3:
+          action>: Text
+          text: 'ngでした'

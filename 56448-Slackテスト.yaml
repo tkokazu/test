@@ -1,0 +1,49 @@
+# Slackでメッセージを送信
++send_slack_message_1:
+  action>: SendSlackMessage
+  provider: slack_926267e150fffe863c0a
+  channel: '#times_kikuchi'
+  text: 'Slackの共有リンクは発行できるのか？？'
+  buttons: []
+  send_select: false
+  response_message: false
+  private: false
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Slack (AUTORO)'
+        icon: slack
+      buttons:
+        type: buttons
+        buttons:
+          []
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: slackData
+  value: +send_slack_message_1
+  private: false
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "return (\n  \"今発行されたリンクはこちら\\nhttps://tutorial-inc.slack.com/archives/\" +\n  slackData[0].channel +\n  \"/p\" +\n  slackData[0].ts.replace(/\\D/g, \"\")\n);\n"
+  private: false
+
+# Slackでメッセージを送信
++send_slack_message_2:
+  action>: SendSlackMessage
+  provider: slack_926267e150fffe863c0a
+  channel: '#times_kikuchi'
+  text: +run_script_1
+  send_select: false
+  response_message: false
+  private: false
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Slack (AUTORO)'
+        icon: slack

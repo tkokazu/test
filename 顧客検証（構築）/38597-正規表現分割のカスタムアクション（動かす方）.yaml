@@ -1,0 +1,24 @@
+# 正規表現カスタムアクション
++call_custom_action_1:
+  action>: CallCustomAction
+  id: ca_1ebe4ed5a7da16ac29a7
+  params:
+    text: '『名前を入れてね』'
+    regex_1: '『'
+    regex_2: '』'
+  meta:
+    version: '2021-10-22T07:06:51.000Z'
+    interface:
+      params:
+        text: Text
+        regex_1: Text
+        regex_2: Text
+      output: List
+      pickers:
+    display:
+      id:
+        type: chip
+        label: '正規表現カスタムアクション'
+        icon: build
+        imageUrl: '/icons/original/missing.png'
+        color: '#0097A7'

@@ -1,0 +1,22 @@
+# 真のとき
++if_1:
+  if>: "${hoge == ''}"
+  _do:
+
+    # ブラウザを開く
+    +open_browser_1:
+      action>: OpenBrowser
+      url: ''
+      lang: ja-JP
+      headless: true
+      useShadowDomSelector: false
+      private: false
+
+    # パスワード入力
+    +type_password_1:
+      action>: TypePassword
+      browser: "+open_browser_1"
+      selector: ''
+      password: "********"
+      ignoreError: true
+      private: false

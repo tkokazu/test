@@ -1,0 +1,45 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://twitter.com/premium_life_7?ref_src=twsrc%5Egoogle%7Ctwcamp%5Eserp%7Ctwgr%5Eauthor'
+  lang: 'ja-JP'
+  headless: true
+  windowSize: '1920 x 1080'
+
+# マウスオーバー
++hover_1:
+  action>: Hover
+  browser: +open_browser_1
+  selector: 'a[href="/premium_life_7/followers"] > span > span'
+  waitAfter: 5000
+  ignoreError: true
+
+# テキストを作成
++text_1:
+  action>: Text
+  text: "function twitterUserInfo (user_id) {\n  const baseUrl = 'https://twitter.com/i/api/graphql/I5nvpI91ljifos1Y3Lltyg/UserByRestId?variables=';\n  const query = {\n    \"userId\":\"1964427019\",\n    \"withSafetyModeUserFields\":true,\n    \"withSuperFollowsUserFields\":true\n  };\n  const requestUrl = baseUrl + encodeURIComponent(JSON.stringify(query));\n  const ajax = new XMLHttpRequest();\n  ajax.open('get', requestUrl, false);\n  ajax.setRequestHeader('authorization', 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA');\n  ajax.setRequestHeader('x-guest-token', '1486547961412669444');\n  ajax.send();\n  console.log(ajax.response)\n}"
+
+# スクリプトを実行
++run_script_2:
+  action>: RunScript
+  code: "return {\n  authorization:\n    \"Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA\",\n  \"x-guest-token\": \"1486547961412669400\"\n};\n"
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: header
+  value: +run_script_2
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "const baseUrl =\n  \"https://twitter.com/i/api/graphql/I5nvpI91ljifos1Y3Lltyg/UserByRestId?variables=\";\nconst query = {\n  userId: \"1964427019\",\n  withSafetyModeUserFields: true,\n  withSuperFollowsUserFields: true\n};\nreturn baseUrl + encodeURIComponent(JSON.stringify(query));\n"
+
+# HTTPリクエスト
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: +run_script_1
+  params: ''
+  method: GET
+  headers: ${header}
+  multipart: false

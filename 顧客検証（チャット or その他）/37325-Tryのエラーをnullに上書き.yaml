@@ -1,0 +1,30 @@
+# エラーを捕捉する
++try_1:
+  try>: error
+  _do:
+
+    # 強制終了
+    +kill_attempt_1:
+      action>: KillAttempt
+      message: 'こんなerrorが起きてます'
+
+# 真のとき
++if_1:
+  if>: ${!!error}
+  _do:
+
+    # 変数に保存_errorを空にする
+    +store_value_1:
+      action>: StoreValue
+      key: error
+      value: ''
+
+# 真のとき
++if_2:
+  if>: ${!error}
+  _do:
+
+    # テキストを作成
+    +text_1:
+      action>: Text
+      text: 'からでーす'

@@ -1,0 +1,67 @@
+# ブラウザを開く_固定IP/stealth必須
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://moneyforward.com/users/sign_in'
+  lang: 'ja-JP'
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36'
+  headless: true
+  plugins: ["stealth"]
+
+# 文字入力_メールアドレス
++type_text_1:
+  action>: TypeText
+  browser: +open_browser_1
+  selector: '#sign_in_session_service_email'
+  text: ''
+  clearValue: false
+  ignoreError: true
+
+# 文字入力_パスワード
++type_text_2:
+  action>: TypeText
+  browser: +type_text_1
+  selector: '#sign_in_session_service_password'
+  text: ''
+  clearValue: false
+  ignoreError: true
+
+# クリック_Login
++click_1:
+  action>: Click
+  browser: +type_text_2
+  selector: '#login-btn-sumit'
+  confirm: true
+  waitAfter: 5000
+  ignoreError: true
+
+# 人の入力を取得_二段階認証確認
++get_human_input_1:
+  action>: GetHumanInput
+  text: 'パスワードの確認よろ'
+  image: ''
+  assistant: 'kikuchi@tutorial.co.jp'
+
+# 文字入力_認証コード入力
++type_text_3:
+  action>: TypeText
+  browser: +click_1
+  selector: '#verification_code'
+  text: +get_human_input_1
+  clearValue: false
+  ignoreError: true
+
+# クリック_認証実行
++click_2:
+  action>: Click
+  browser: +type_text_3
+  selector: '.form-submit-code'
+  confirm: true
+  ignoreError: true
+
+# スクリーンショットを撮る_OK
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +click_2
+  full_page: true
+  type: png
+  waitBefore: 10000

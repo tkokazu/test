@@ -1,0 +1,83 @@
+# テキストを作成
++text_1:
+  action>: Text
+  text: ${parseInt(moment().utcOffset(540).subtract(1, "month").endOf("month").format("D"))}
+
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://github.com/login'
+  lang: 'ja-JP'
+  headless: true
+  plugins: ["stealth"]
+
+# 文字入力
++type_text_1:
+  action>: TypeText
+  browser: +open_browser_1
+  selector: '#login_field'
+  text: 'taku_okazu@yahoo.co.jp'
+  clearValue: false
+  ignoreError: true
+
+# 文字入力
++type_text_2:
+  action>: TypeText
+  browser: +type_text_1
+  selector: '#password'
+  text: okazu288
+  clearValue: false
+  ignoreError: true
+
+# クリック
++click_1:
+  action>: Click
+  browser: +type_text_2
+  selector: '.btn'
+  confirm: true
+  ignoreError: true
+
+# 2段階認証
++call_custom_action_1:
+  action>: CallCustomAction
+  id: ca_d22cf2f2d9fadc73478d
+  params:
+    token: 7voxekknykf7mrhf
+  meta:
+    version: '2021-03-19T00:42:04.000Z'
+    interface:
+      params:
+        token: Text
+      output: Anything
+      pickers:
+    display:
+      id:
+        type: chip
+        label: '2段階認証'
+        icon: build
+        imageUrl: '/icons/original/missing.png'
+        color: '#5D4037'
+
+# 文字入力
++type_text_3:
+  action>: TypeText
+  browser: +click_1
+  selector: '#otp'
+  text: +call_custom_action_1
+  clearValue: false
+  ignoreError: true
+
+# クリック
++click_2:
+  action>: Click
+  browser: +type_text_3
+  selector: '.auth-form-body > form > .btn-primary'
+  confirm: true
+  ignoreError: true
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +click_2
+  full_page: false
+  type: png

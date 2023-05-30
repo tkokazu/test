@@ -1,0 +1,378 @@
+# 変数に保存
++store_value_9:
+  action>: StoreValue
+  key: user_id
+  value: ${api_storeValue}
+
+# 変数に保存
++store_value_11:
+  action>: StoreValue
+  key: data
+  value: []
+
+# ブラウザを開く_Google
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.google.co.jp/search?q=Pairs&glp=1&hl=JA&tci=g:2392&uule=w+CAIQICIFSmFwYW4&cr=countryJP&safe=images&safe=high&aqs=chrome.0.69i59j0l5.1861j0j7'
+  lang: 'ja-JP'
+  timeZone: 'Asia/Tokyo'
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100'
+  headless: true
+  windowSize: '1280 x 720'
+  plugins: ["stealth"]
+
+# ページにクッキーをセット
++import_cookies_1:
+  action>: ImportCookies
+  browser: +open_browser_1
+  id: '36737de3-2599-48d8-bda2-22f1b8a5f369'
+  meta:
+    display:
+      id:
+        label: 'なんかのcookie'
+        icon: 'fa-cookie-bite'
+        type: chip
+
+# signs in time is setting
++store_value_14:
+  action>: StoreValue
+  key: loginTime
+  value: ${new Date().getTime()}
+
+# URLへ遷移
++go_to_2:
+  action>: GoTo
+  browser: +import_cookies_1
+  url: 'https://pairs.lv/search'
+  waitAfter: 5000
+
+# ページ内でJavaScriptを実行する
++inject_script_4:
+  action>: InjectScript
+  browser: +go_to_2
+  code: "document\n  .querySelectorAll(\"*\")\n  .forEach(x => (x.innerText === \"さがす画面に戻る\" ? x.click() : null));\n"
+  returnValue: false
+
+# ページ内でJavaScriptを実行する
++inject_script_5:
+  action>: InjectScript
+  browser: +inject_script_4
+  code: "let p = document.querySelectorAll(\"p\");\np.forEach(x => (x.innerText === \"あとで\" ? x.click() : null));\n"
+  waitBefore: 5000
+  returnValue: true
+
+# URLを取得_ログインできている確認
++get_u_r_l_1:
+  action>: GetURL
+  browser: +inject_script_4
+
+# 変数に保存 https://pairs.lv/search
++store_value_4:
+  action>: StoreValue
+  key: searchPage
+  value: +get_u_r_l_1
+
+# 真のとき_セッション切れてるとき
++if_1:
+  if>: ${!/search/.test(searchPage)}
+  _do:
+
+    # スクリプトを実行
+    +run_script_3:
+      action>: RunScript
+      code: "var json = {\n  to: user_id,\n  messages: [\n    {\n      type: \"text\",\n      text: \"cookieを更新します。\"\n    }\n  ]\n};\nreturn json;\n"
+
+    # 変数に保存
+    +store_value_12:
+      action>: StoreValue
+      key: cookie_repo
+      value: +run_script_3
+
+    # HTTPリクエスト_cookie変更するよー
+    +h_t_t_p_request_3:
+      action>: HTTPRequest
+      url: 'https://api.line.me/v2/bot/message/push'
+      params: ${JSON.stringify(cookie_repo)}
+      method: POST
+      headers: ${rc_token}
+      multipart: false
+
+    # cookieを更新します
+    +add_to_queue_1:
+      action>: AddToQueue
+      workflow_id: 21637
+
+    # 強制終了
+    +kill_attempt_1:
+      action>: KillAttempt
+      message: 'cookieのセッション切れ'
+
+# クリック_1人目をクリック
++click_1:
+  action>: Click
+  browser: +go_to_2
+  selector: 'a[href^="/user/profile/search/"]'
+  confirm: true
+  waitBefore: 5000
+  ignoreError: true
+  timeout: 30000
+
+# ヒット人数取得
++inject_script_1:
+  action>: InjectScript
+  browser: +go_to_2
+  code: "function main(offset, seed) {\n  let cookie = document.cookie;\n  let token = document.cookie\n    .match(/(?<=pairs_token\\=).*/)[0]\n    .replace(/;.*/, \"\");\n  let url =\n    \"https://pairs.lv/2.0/search/layout?offset=\" +\n    offset +\n    \"&limit=3&device=pc&version=git-xxxxxxxx-v20190101123456&rand_seed=\" +\n    seed +\n    \"&sort_id=0&is_mock=0\";\n  let ajax = new XMLHttpRequest();\n  ajax.open(\"get\", url, false);\n  ajax.setRequestHeader(\"pairs-token\", token);\n  ajax.setRequestHeader(\"accept\", \"application/json, text/plain, */*\");\n  ajax.send();\n  return JSON.parse(ajax.response);\n}\nlet hit = main(0, 0).total_in_chunk;\nhit;\n"
+  returnValue: true
+
+# 変数に保存_ヒット件数
++store_value_2:
+  action>: StoreValue
+  key: allnum
+  value: +inject_script_1
+
+# 変数に保存
++store_value_5:
+  action>: StoreValue
+  key: h
+  value: ${parseInt(allnum)}
+
+# 待ち時間の計算(parsons × 3.75seconds)
++store_value_3:
+  action>: StoreValue
+  key: waitTime
+  value: ${(h + h/(h/Math.pow(10 , String(h).length- 1))) * 4500}
+
+# スクリプトを実行_全件数と待ち時間を報告
++run_script_1:
+  action>: RunScript
+  code: "\nvar dt = \"${moment(new Date().getTime() + waitTime ).utcOffset(540).format(\"HH:mm:ss\")}\";\nvar json = {\n  to: user_id,\n  messages: [\n    {\n      type: \"text\",\n      text:\n        waitTime +\n        \"ms後に完了します。ヒット件数は\" +\n        allnum +\n        \"です。\\n完了予定時間は、『\" +\n        dt +\n        \"』です。\"\n    }\n  ]\n};\nreturn json;\n"
+
+# 変数に保存_全件数と待ち時間を報告
++store_value_1:
+  action>: StoreValue
+  key: result
+  value: +run_script_1
+
+# HTTPリクエスト_전건수 와 대기시간을 보고
++h_t_t_p_request_2:
+  action>: HTTPRequest
+  url: 'https://api.line.me/v2/bot/message/push'
+  params: ${JSON.stringify(result)}
+  method: POST
+  headers: ${rc_token}
+  multipart: false
+
+# 変数に保存_rand_seedの初期値
++store_value_19:
+  action>: StoreValue
+  key: seed
+  value: '0'
+
+# 変数に保存_ 全loop数
++store_value_18:
+  action>: StoreValue
+  key: defaultLoopCount
+  value: ${Math.ceil(h / 28) + 2}
+
+# スクリプトを実行_ループ数算出
++run_script_6:
+  action>: RunScript
+  code: "return defaultLoopCount <= 5 ? defaultLoopCount : 5;\n"
+
+# 変数に保存_maxLoop
++store_value_22:
+  action>: StoreValue
+  key: loop
+  value: +run_script_6
+
+# 繰り返し_max25回
++loop_1:
+  loop>: ${loop}
+  _do:
+
+    # idとseedを取得_実行前5秒/実行後10秒ほど待機
+    +inject_script_2:
+      action>: InjectScript
+      browser: +go_to_2
+      code: "function main(offset, seed){\n  let cookie = document.cookie;\n  let token = document.cookie.match(/(?<=pairs_token\\=).*/)[0].replace(/;.*/,\"\");\n  let url = 'https://pairs.lv/2.0/search/layout?offset=' + offset + '&limit=3&device=pc&version=git-xxxxxxxx-v20190101123456&rand_seed=' + seed +'&sort_id=0&is_mock=0';\n  let ajax = new XMLHttpRequest();\n  ajax.open(\"get\", url, false);\n  ajax.setRequestHeader(\"pairs-token\", token);\n  ajax.setRequestHeader(\"accept\", \"application/json, text/plain, */*\");\n  ajax.send();\n  return JSON.parse(ajax.response);\n};\n\nfunction objSort(obj){\n  let rand_seed = obj.rand_seed;\n  let layout = obj.layouts.filter(x => Object.keys(x)[0] === \"chunk\");\n  let array = layout.map(x => x.chunk.items);\n  array = array.reduce((a, b) => a.concat(b));\n  let id = array.map(x => !!x.partner ? x.partner.id : null);\n  return {seed : rand_seed, id : id.filter(x => !!x)};\n}\nlet object = main(${i * 3}, \"${seed}\");\nlet result = objSort(object);\nresult;"
+      waitBefore: 5000
+      waitAfter: ${Math.floor(Math.random() * 6500)}
+      returnValue: true
+
+    # 変数に保存_idと次のseed
+    +store_value_7:
+      action>: StoreValue
+      key: object
+      value: +inject_script_2
+
+    # 変数に保存
+    +store_value_21:
+      action>: StoreValue
+      key: seed
+      value: ${object.seed}
+
+    # スクリプトを実行_10件ずつにわける
+    +run_script_2:
+      action>: RunScript
+      code: "//15件ごとのリストに分ける\nlet lists = object.id;\nlet rs = [];\ndo {\n  rs.push(JSON.stringify(lists.splice(0, 10)));\n} while (lists.length != 0);\nreturn rs;\n"
+
+    # 10件ずつ足跡つけ続ける
+    +for_each_1:
+      for_each>:
+        id_list: +run_script_2
+      _do:
+
+        # 足跡の開始時間
+        +store_value_6:
+          action>: StoreValue
+          key: footprint_start
+          value: ${new Date().getTime()}
+
+        # 足跡をつける_1〜4秒のランダム（本当はこの次にFindElement入れたい）
+        +inject_script_3:
+          action>: InjectScript
+          browser: +go_to_2
+          code: "let footprint = () => {\n  let myPromise = Promise.resolve();\n  for (let data of ${id_list}) {\n    myPromise = myPromise\n      .then(task1.bind(this, data)); \n//この後に情報取得をいれればユーザー情報も取得可能\n  }\n  myPromise.then(()=>flag());\n\n\n// ループで実行する処理\n  function task1(val){\n    return new Promise(function(resolve, reject) {\n      let ms = Math.floor(Math.random() * 3000) + 1000;\n      setTimeout(() => {\n        history.replaceState('', '', val);\n        location.hash= val;\n        resolve();\n      }, ms);\n    });\n  }\n\n  function flag(){\n    let a = document.createElement('a');\n    a.id = 'flag';\n    a.textContent = '済';\n    a.addEventListener('click' , (e) => {\n      let el = e.target;\n      el.parentNode.removeChild(el);\n    });\n    document.body.appendChild(a);\n  }\n};\nfootprint(); //exec"
+          waitAfter: 15000
+          returnValue: true
+
+        # FindElement_delete flag && login state check
+        +inject_script_6:
+          action>: InjectScript
+          browser: +click_1
+          code: "let getFlag = async () => {\n  let st = new Date().getTime();\n  let time = 0;\n  let myPromise = Promise.resolve();\n  let r = false;\n  do {\n    myPromise = myPromise.then(task1.bind(this, \"#flag\"));\n    r = await myPromise;\n    time = new Date().getTime() - st;\n  } while (!r && time < 22500);\n  myPromise.then(res => {\n    let flag = Math.floor(Math.random() * 100);\n    if (flag <= 20 && !!res.elm) {\n      setTimeout(() => location.reload(), 1500);\n    }\n  });\n  return {\n    elm: r,\n    login: await myPromise.then(() => task2())\n  };\n\n  // フラグを探す\n  function task1(val) {\n    return new Promise(function(resolve, reject) {\n      setTimeout(() => {\n        let flagDom = document.querySelector(val);\n        let result = false;\n        if (!!flagDom) {\n          result = true;\n          flagDom.click();\n        }\n        resolve(result);\n      }, 2000);\n    });\n  }\n\n  function task2() {\n    let hereHref = location.href;\n    let res = /search/.test(hereHref);\n    return res;\n  }\n};\ngetFlag(); //exec\n"
+          returnValue: true
+
+        # 変数に保存_ログイン状況
+        +store_value_10:
+          action>: StoreValue
+          key: sigh_in_state
+          value: +inject_script_6
+
+        # 真のとき_要素がなかった時/エラーが発生したとき
+        +if_3:
+          if>: ${!sigh_in_state.elm}
+          _do:
+
+            # FindElement_もう一回！
+            +inject_script_7:
+              action>: InjectScript
+              browser: +click_1
+              code: "let getFlag = async () => {\n  let st = new Date().getTime();\n  let time = 0;\n  let myPromise = Promise.resolve();\n  let r = false;\n  do {\n    myPromise = myPromise.then(task1.bind(this, \"#flag\"));\n    r = await myPromise;\n    time = new Date().getTime() - st;\n  } while (!r && time < 25000);\n  return r;\n\n  // フラグを探す\n  function task1(val) {\n    return new Promise(function(resolve, reject) {\n      setTimeout(() => {\n        let flagDom = document.querySelector(val);\n        let result = false;\n        if (!!flagDom) {\n          result = true;\n          flagDom.click();\n        }\n        resolve(result);\n      }, 3000);\n    });\n  }\n};\ngetFlag(); //exec\n"
+              returnValue: true
+
+            # 変数に保存
+            +store_value_17:
+              action>: StoreValue
+              key: res_2
+              value: +inject_script_7
+
+            # 真のとき_終わってない！
+            +if_4:
+              if>: ${!res_2}
+              _do:
+
+                # 強制終了
+                +kill_attempt_3:
+                  action>: KillAttempt
+                  message: '1分以上たったけど終われない！'
+
+        # 足跡をつけるのにかかった時間
+        +store_value_8:
+          action>: StoreValue
+          key: footprint_end
+          value: '${(new Date().getTime() - footprint_start )}ms'
+
+        # 真のとき_ログインセッションが切れたーーーーーーーー
+        +if_2:
+          if>: ${sigh_in_state.login == false}
+          _do:
+
+            # スクリプトを実行_経過人数を報告
+            +run_script_4:
+              action>: RunScript
+              code: "var json = {\n  to: user_id,\n  messages: [\n    {\n      type: \"text\",\n      text:\n        \"だいたい\" +\n        (28 * (i + 1) - 24) +\n        \"人目でcookie期限が切れました。\\n更新します。\"\n    }\n  ]\n};\nreturn json;\n"
+
+            # 変数に保存
+            +store_value_13:
+              action>: StoreValue
+              key: cookie_repo
+              value: +run_script_4
+
+            # HTTPリクエスト_経過人数とcookie切れを報告
+            +h_t_t_p_request_4:
+              action>: HTTPRequest
+              url: 'https://api.line.me/v2/bot/message/push'
+              params: ${JSON.stringify(cookie_repo)}
+              method: POST
+              headers: ${rc_token}
+              multipart: false
+
+            # ワークフローを実行する_cookieの再発行
+            +add_to_queue_2:
+              action>: AddToQueue
+              workflow_id: 40969
+              meta:
+                display:
+                  workflow_id:
+                    label: '40969 - refresh cookie (last update: 2020-08-18)'
+                    icon: build
+                    type: chip
+
+            # 強制終了
+            +kill_attempt_2:
+              action>: KillAttempt
+              message: 'ログインセッションが切れましたぁぁぁぁぁぁぁぁぁぁ'
+
+# スクリプトを実行
++run_script_20:
+  action>: RunScript
+  code: "var json = {\n  to: user_id,\n  messages: [\n    {\n      type: \"text\",\n      text: \"「footprint（21383）」のワークフローが完了しました。\"\n    }\n  ]\n};\nreturn json;\n"
+
+# 変数に保存
++store_value_20:
+  action>: StoreValue
+  key: body
+  value: +run_script_20
+
+# HTTPリクエスト
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: 'https://api.line.me/v2/bot/message/push'
+  params: ${JSON.stringify(body)}
+  method: POST
+  headers: ${rc_token}
+  multipart: false
+
+# 真のとき_10回より多い（再起動）
++if_5:
+  if>: ${defaultLoopCount > 5}
+  _do:
+
+    # URLを取得
+    +get_u_r_l_2:
+      action>: GetURL
+      browser: +click_1
+
+    # 変数に保存
+    +store_value_15:
+      action>: StoreValue
+      key: here_url
+      value: +get_u_r_l_2
+
+    # スクリプトを実行
+    +run_script_5:
+      action>: RunScript
+      code: "let obj = {\n  line_user_id: user_id,\n  rc_token: rc_token,\n  last_url: here_url,\n  rand_seed: seed,\n  loop: defaultLoopCount - 5,\n  loopCount: loop,\n  exec_flag: true\n};\nreturn obj;\n"
+
+    # 変数に保存
+    +store_value_16:
+      action>: StoreValue
+      key: param
+      value: +run_script_5
+
+    # ワークフローを実行する
+    +add_to_queue_3:
+      action>: AddToQueue
+      workflow_id: 40977
+      params: ${param}

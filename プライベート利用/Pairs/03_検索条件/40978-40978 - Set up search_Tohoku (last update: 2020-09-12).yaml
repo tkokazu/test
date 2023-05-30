@@ -1,0 +1,211 @@
+# 変数に保存
++store_value_5:
+  action>: StoreValue
+  key: s
+  value: ${new Date().getTime()}
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5a2e4385349996c6a727
+  spreadsheet_id: '1OZheVtOH_lEerGH5DkSDGqChWDPwe2NK4t-4Y7eWkro'
+
+# セルの値を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_1
+  range: '91124987!A2:E'
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: sheet
+  value: +get_cells_1
+
+# スクリプトを実行_一番最短時間のやーつ
++run_script_1:
+  action>: RunScript
+  code: "sheet.forEach((x, i, arr) => (x[5] = i + 2));\nreturn sheet.filter(x => x[4] == 1)[0];\n"
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: data
+  value: +run_script_1
+
+# ブラウザを開く_Google
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.google.co.jp/search?q=Pairs&glp=1&hl=JA&tci=g:2392&uule=w+CAIQICIFSmFwYW4&cr=countryJP&safe=images&safe=high&aqs=chrome.0.69i59j0l5.1861j0j7'
+  lang: 'ja-JP'
+  timeZone: 'Asia/Tokyo'
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100'
+  headless: true
+  plugins: ["stealth"]
+
+# ページにクッキーをセット
++import_cookies_1:
+  action>: ImportCookies
+  browser: +open_browser_1
+  id: '1aacbcd1-3ea4-450b-b62e-7cbf5fa2a082'
+
+# URLへ遷移
++go_to_2:
+  action>: GoTo
+  browser: +import_cookies_1
+  url: 'https://pairs.lv/search'
+  waitAfter: 5000
+
+# ページ内でJavaScriptを実行する
++inject_script_4:
+  action>: InjectScript
+  browser: +go_to_2
+  code: "document\n  .querySelectorAll(\"*\")\n  .forEach(x => (x.innerText === \"さがす画面に戻る\" ? x.click() : null));\n"
+  returnValue: false
+
+# ページ内でJavaScriptを実行する
++inject_script_5:
+  action>: InjectScript
+  browser: +inject_script_4
+  code: "let p = document.querySelectorAll(\"p\");\np.forEach(x => (x.innerText === \"あとで\" ? x.click() : null));\n"
+  waitBefore: 5000
+  returnValue: true
+
+# URLを取得_ログインできている確認
++get_u_r_l_1:
+  action>: GetURL
+  browser: +inject_script_4
+
+# 変数に保存 https://pairs.lv/search
++store_value_4:
+  action>: StoreValue
+  key: searchPage
+  value: +get_u_r_l_1
+
+# 真のとき_セッション切れてるとき
++if_1:
+  if>: ${!/search/.test(searchPage)}
+  _do:
+
+    # 強制終了
+    +kill_attempt_1:
+      action>: KillAttempt
+      message: 'cookieのセッション切れ'
+
+# URLへ遷移
++go_to_1:
+  action>: GoTo
+  browser: +inject_script_4
+  url: 'https://pairs.lv/search/setup_condition/grid/index'
+  waitAfter: 5000
+
+# クリック_検索条件をリセット
++click_2:
+  action>: Click
+  browser: +go_to_1
+  selector: 'main > header button[class$="pointerStyles-ButtonText"]'
+  confirm: true
+  ignoreError: true
+
+# 都道府県のチェックをすべて外す。それぞれの部品をプロミスチェーン化する
++inject_script_1:
+  action>: InjectScript
+  browser: +go_to_2
+  code: "let checkOff = () => {\n  let check = document.querySelectorAll(\"li svg[class^=check-icon]\");\n  check.forEach(x => {\n    let el = x.parentNode.querySelector(\"input\");\n    let evt = new Event(\"change\");\n    el.click();\n    el.dispatchEvent(evt);\n  });\n};\n\nlet checkOn = key => {\n  let li = document.querySelectorAll(\"li label\");\n  li.forEach(x => {\n    let name = x.innerText.trim();\n    if (name === key) {\n      let elm = x.parentNode.querySelector(\"input\");\n      elm.click();\n      elm.dispatchEvent(new Event(\"change\"));\n    }\n  });\n};\n\nlet result = () => {\n  document.querySelector(\"div[class^='text-submit-button'] > button\").click();\n};\n\n//Promiseチェーン実行\ndocument.querySelector(\"a[href$='residence_state']\").click();\nPromise.resolve()\n  .then(() => {\n    return new Promise((resolve, reject) => {\n      setTimeout(() => {\n        document.querySelector(\"a[href$='residence_state/1']\").click();\n        resolve(true);\n      }, 1500);\n    });\n  })\n  .then(() => {\n    return new Promise((resolve, reject) => {\n      setTimeout(() => {\n        checkOff();\n        resolve(true);\n      }, 1500);\n    });\n  })\n  .then(() => {\n    return new Promise((resolve, reject) => {\n      setTimeout(() => {\n        checkOn(\"${data[0]}\");\n        resolve();\n      }, 1500);\n    });\n  })\n  .then(() => {\n    return new Promise((resolve, reject) => {\n      setTimeout(() => {\n        result();\n        resolve();\n      }, 1500);\n    });\n  });\n"
+  returnValue: false
+
+# 選択肢を選ぶ_開始年齢
++select_option_1:
+  action>: SelectOption
+  browser: +go_to_2
+  selector: "select[class*='Select']"
+  value: ${data[1]}
+  text: ''
+  confirm: true
+  waitBefore: 5000
+  ignoreError: true
+
+# 選択肢を選ぶ_終了年齢
++select_option_2:
+  action>: SelectOption
+  browser: +select_option_1
+  selector: "div:nth-child(3) > label > select[class*='Select']"
+  value: ${data[2]}
+  text: ''
+  confirm: true
+  waitBefore: 3000
+  ignoreError: true
+
+# 選択肢を選ぶ_再収録員24時間以内
++select_option_3:
+  action>: SelectOption
+  browser: +select_option_2
+  selector: 'li:nth-child(10) select'
+  value: 2
+  text: ''
+  confirm: true
+  ignoreError: true
+
+# クリック_決定
++click_1:
+  action>: Click
+  browser: +select_option_2
+  selector: "button[class$='pointerStyles-SearchCondition']"
+  confirm: true
+  waitBefore: 3000
+  ignoreError: true
+
+# ヒット件数の取得
++inject_script_2:
+  action>: InjectScript
+  browser: +click_1
+  code: "function main(offset, seed) {\n  let cookie = document.cookie;\n  let token = document.cookie\n    .match(/(?<=pairs_token\\=).*/)[0]\n    .replace(/;.*/, \"\");\n  let url =\n    \"https://pairs.lv/2.0/search/layout?offset=\" +\n    offset +\n    \"&limit=3&device=pc&version=git-xxxxxxxx-v20190101123456&rand_seed=\" +\n    seed +\n    \"&sort_id=0&is_mock=0\";\n  let ajax = new XMLHttpRequest();\n  ajax.open(\"get\", url, false);\n  ajax.setRequestHeader(\"pairs-token\", token);\n  ajax.setRequestHeader(\"accept\", \"application/json, text/plain, */*\");\n  ajax.send();\n  return JSON.parse(ajax.response);\n}\nlet hit = main(0, 0).total_in_chunk;\nhit;\n"
+  waitBefore: 8000
+  waitAfter: 3000
+  returnValue: true
+
+# 変数に保存
++store_value_3:
+  action>: StoreValue
+  key: hit
+  value: +inject_script_2
+
+# セルの値を更新_ヒット件数
++update_cells_2:
+  action>: UpdateCells
+  spreadsheet: +get_spreadsheet_1
+  range: '91124987!D${data[5]}'
+  values: ["${hit}"]
+
+# セルの値を更新_完了時刻
++update_cells_1:
+  action>: UpdateCells
+  spreadsheet: +update_cells_2
+  range: '91124987!F${data[5]}'
+  values: ["${moment().utcOffset(540).format('YYYY-MM-DD HH:mm:ss')}"]
+
+# 変数に保存
++store_value_6:
+  action>: StoreValue
+  key: e
+  value: ${new Date().getTime() - s}
+
+# 変数に保存
++store_value_7:
+  action>: StoreValue
+  key: date_c
+  value:
+    hour: ${moment().utcOffset(540).hour()}
+    cmFlag: ${cmFlag}
+    cal_1: ${moment().utcOffset(540).hour() >= 19 && cmFlag < 50}
+    cal_2: ${moment().utcOffset(540).hour() == 0 && cmFlag < 50}
+
+# コミュニティーの入れ替えを起動（19-23時にcmFlag < 50のとき）
++if_2:
+  if>: ${moment().utcOffset(540).hour() >= 19 && cmFlag < 50 || moment().utcOffset(540).hour() == 0 && cmFlag < 50}
+  _do:
+
+    # ワークフローを実行する
+    +add_to_queue_1:
+      action>: AddToQueue
+      workflow_id: 22122

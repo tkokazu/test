@@ -1,0 +1,145 @@
+# 変数に保存_現在時間 + 10分
++store_value_3:
+  action>: StoreValue
+  key: time
+  value: ${moment().utcOffset(540).add(10, "minutes").format("YYYY/MM/DD HH:mm:ss")}
+
+# 変数に保存_加算する時間（30分単位） => 30 × n分をプラス
++store_value_4:
+  action>: StoreValue
+  key: add_time
+  value: '0'
+
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: '1B5WXJtpvvpQ4xsb_IxYO6TdXF8-UiHL_tcZ2BE0AJHk'
+  meta:
+    display:
+      spreadsheet_id:
+        label: test_1
+        icon: text
+        type: chip
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://secure.freee.co.jp/manual_journals/generic_import'
+  lang: 'ja-JP'
+  headless: true
+
+# 文字入力_address
++type_text_1:
+  action>: TypeText
+  browser: +open_browser_1
+  selector: '#user_email'
+  text: 'rhc_system-info@redhorse.co.jp'
+  clearValue: false
+  ignoreError: true
+
+# 文字入力_password
++type_text_2:
+  action>: TypeText
+  browser: +type_text_1
+  selector: 'input[name="password"]'
+  text: 'rhc@1964'
+  clearValue: false
+  ignoreError: true
+
+# クリック
++click_1:
+  action>: Click
+  browser: +type_text_2
+  selector: 'input[name="commit"]'
+  confirm: true
+  ignoreError: true
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +click_1
+  full_page: false
+  type: png
+  waitBefore: 10000
+
+# URLへ遷移_インポート履歴
++go_to_1:
+  action>: GoTo
+  browser: +click_1
+  url: 'https://secure.freee.co.jp/manual_journals/import_histories?mode=generic'
+
+# テーブルデータを取得_インポート履歴データを全取得
++extract_data_from_table_1:
+  action>: ExtractDataFromTable
+  browser: +go_to_1
+  selector: 'table.import-file-table'
+  ignoreError: true
+
+# スクレイピング
++scrape_page_1:
+  action>: ScrapePage
+  browser: +go_to_1
+  selector: '.import-file-name > a'
+  text_only: false
+  ignoreError: true
+
+# 各要素について繰り返す
++for_each_1:
+  for_each>:
+    file_name_data: +scrape_page_1
+  _do:
+
+    # 真のとき_■■■を含むファイルの場合
+    +if_1:
+      if>: ${file_name_data.innerText.indexOf("■■■") > -1}
+      _do:
+
+        # スクリプトを実行_addToQueueのオブジェクトを作る
+        +run_script_1:
+          action>: RunScript
+          code: "let import_link = file_name_data.href;\nlet import_id = import_link.match(/(?<=import\\/)\\d{1,}/);\nreturn !!import_id ? import_id[0] : null;\n"
+
+        # 変数に保存
+        +store_value_1:
+          action>: StoreValue
+          key: file_id
+          value: +run_script_1
+
+        # 変数に保存_削除ボタンのセレクタ(不要)
+        +store_value_2:
+          action>: StoreValue
+          key: selector
+          value: '{"delete_button_selector" : "a[data-deal_import_id=\"${file_id}\"]"'
+
+        # 変数に保存_timeに30 ×  n分を加算する
+        +store_value_6:
+          action>: StoreValue
+          key: time
+          value: ${moment(time).add(add_time * 30, "minutes").format("YYYY/MM/DD HH:mm:ss")}
+
+        # 末尾に値を追加
+        +append_values_1:
+          action>: AppendValues
+          spreadsheet: +get_spreadsheet_1
+          range: '実行予定'
+          values: ["${file_id}","${time}"]
+
+        # 変数に保存_プラス１
+        +store_value_5:
+          action>: StoreValue
+          key: add_time
+          value: ${parseInt(add_time) + 1}
+
+# HTTPリクエスト_スケジュール作成のGASを起動
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: ''
+  params: ''
+  method: ''
+  headers: ''
+  multipart: false

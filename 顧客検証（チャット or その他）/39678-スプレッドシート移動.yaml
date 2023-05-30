@@ -1,0 +1,54 @@
+# 繰り返しを終了するほげほげ
++break_if_1:
+  break_if>: ''
+
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://tutorial.co.jp/'
+  lang: 'ja-JP'
+  headless: true
+
+# スクレイピング_html全体を取得
++scrape_page_1:
+  action>: ScrapePage
+  browser: +open_browser_1
+  selector: html
+  text_only: false
+  ignoreError: true
+
+# リストから要素を取得
++get_item_from_list_1:
+  action>: GetItemFromList
+  list: +scrape_page_1
+  index: '0'
+
+# オブジェクトのキーの値を取得_HTMLのみ抽出
++get_value_with_key_1:
+  action>: GetValueWithKey
+  object: +get_item_from_list_1
+  key: innerHTML
+
+# 正規表現で検索
++match_text_1:
+  action>: MatchText
+  text: +get_value_with_key_1
+  regex: RPA
+  global: true
+  ignore_case: false
+
+# 変数に保存_検索結果
++store_value_1:
+  action>: StoreValue
+  key: searchWords
+  value: +match_text_1
+
+# 真のとき_特定ワードが含まれるとき
++if_1:
+  if>: ${!!searchWords}
+  _do:
+
+    # テキストを作成
+    +text_1:
+      action>: Text
+      text: 'あり'

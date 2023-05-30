@@ -1,0 +1,48 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://account.docusign.com/logout#/username'
+  lang: 'ja-JP'
+  headless: true
+
+# 文字入力
++type_text_1:
+  action>: TypeText
+  browser: +open_browser_1
+  selector: '#username'
+  text: 'sayaka.sato@smartnews.com'
+  clearValue: false
+  ignoreError: true
+
+# クリック
++click_1:
+  action>: Click
+  browser: +type_text_1
+  selector: '.btn'
+  confirm: true
+  ignoreError: true
+
+# 文字入力_pass
++type_text_2:
+  action>: TypeText
+  browser: +click_1
+  selector: '#password'
+  text: 'SNLegal0123@@'
+  clearValue: false
+  ignoreError: true
+
+# クリック
++click_2:
+  action>: Click
+  browser: +type_text_2
+  selector: '.btn'
+  confirm: true
+  ignoreError: true
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +click_2
+  full_page: true
+  type: png
+  waitBefore: 30000

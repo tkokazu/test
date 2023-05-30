@@ -1,0 +1,25 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.post.japanpost.jp/zipcode/dl/oogaki-zip.html'
+  lang: 'ja-JP'
+  headless: false
+  useShadowDomSelector: false
+  private: false
+
+# クリック
++click_1:
+  action>: Click
+  browser: +open_browser_1
+  selector: '.arrange-c:nth-child(4) td:nth-of-type(3) .inline'
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+  private: false
+
+# ダウンロードファイル一覧
++get_download_files_1:
+  action>: GetDownloadFiles
+  order: ASC
+  sort_by: FILENAME
+  private: false

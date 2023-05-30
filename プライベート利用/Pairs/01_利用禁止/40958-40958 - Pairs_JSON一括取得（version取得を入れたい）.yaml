@@ -1,0 +1,190 @@
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5a2e4385349996c6a727
+  spreadsheet_id: '1lUomJDZpc-8Iac47O-bbz2HipblilH1R7xrIXEhekuE'
+
+# セルの値を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_1
+  range: '02_RPA!D1:D'
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: data
+  value: +get_cells_1
+
+# 変数に保存
++store_value_2:
+  action>: StoreValue
+  key: user_id
+  value: ${api_storeValue}
+
+# テキストを作成
++text_1:
+  action>: Text
+  text: ${user_id}
+
+# ブラウザを開く_Google
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.google.co.jp/search?q=Pairs&glp=1&hl=JA&tci=g:2392&uule=w+CAIQICIFSmFwYW4&cr=countryJP&safe=images&safe=high&aqs=chrome.0.69i59j0l5.1861j0j7'
+  lang: 'ja-JP'
+  timeZone: 'Asia/Tokyo'
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36 '
+  headless: true
+
+# URLへ遷移_pairs#email
++go_to_1:
+  action>: GoTo
+  browser: +open_browser_1
+  url: 'https://pairs.lv/#/login/email'
+  waitBefore: 5000
+
+# メアド認証
++inject_script_1:
+  action>: InjectScript
+  browser: +go_to_1
+  code: "var input = document.querySelector(\"input[name=email]\");\ninput.value = \"kikuchi.notification.diary@gmail.com\";\ninput.dispatchEvent(new Event(\"input\"));\ninput.parentNode.querySelector(\"a\").click();\nsetTimeout(() => document.querySelector(\".next-button\").click(), 5000);\n"
+  waitAfter: 15000
+  returnValue: false
+
+# Gmailを取得_認証メールの取得
++gmail_get_1:
+  action>: GmailGet
+  query: 'subject: 【ログイン】認証コードをご確認ください'
+  provider: gmail_c7119cc27f95e1705d26
+  limit: 10
+
+# 変数に保存_メール一覧
++store_value_3:
+  action>: StoreValue
+  key: mail
+  value: +gmail_get_1
+
+# スクリプトを実行_6桁の認証コードを取得
++run_script_3:
+  action>: RunScript
+  code: "var body = mail[0].html;\nvar text = body.replace(/<(\"[^\"]*\"|'[^']*'|[^'\">])*>/g, \"\");\nreturn text.match(/\\d{6}/)[0];\n"
+
+# 文字入力_認証コード入力
++type_text_1:
+  action>: TypeText
+  browser: +inject_script_1
+  selector: '#input-pin-code'
+  text: +run_script_3
+  clearValue: false
+  ignoreError: true
+
+# クリック_ログイン
++click_1:
+  action>: Click
+  browser: +type_text_1
+  selector: '#input-pin-code + a'
+  confirm: true
+  ignoreError: true
+
+# URLへ遷移_Pairs.lv
++go_to_2:
+  action>: GoTo
+  browser: +click_1
+  url: 'https://pairs.lv/#/search/one/1'
+  waitBefore: 5000
+  waitAfter: 10000
+
+# model delete
++inject_script_2:
+  action>: InjectScript
+  browser: +go_to_2
+  code: "var a = document.querySelectorAll(\"div[data-pickup-modal] a.modal_close>img\");\na.length != 0 ? a[0].click() : \"\";\n"
+  returnValue: false
+
+# テキストを取得
++get_text_2:
+  action>: GetText
+  browser: +inject_script_2
+  selector: '.search_result_count'
+  ignoreError: true
+
+# 変数に保存
++store_value_4:
+  action>: StoreValue
+  key: n
+  value: +get_text_2
+
+# 変数に保存
++store_value_5:
+  action>: StoreValue
+  key: m
+  value: ${(data.length + 1)}
+
+# 繰り返し_切り上げ（検索結果÷128） ${Math.ceil(parseInt(n.replace(/人中.*/,""))/128}
++loop_1:
+  loop>: ${Math.ceil(parseInt(n.replace(/人中.*/,"").replace(",",""))/16)}
+  _do:
+
+    # URLへ遷移_ホームへ戻る
+    +go_to_3:
+      action>: GoTo
+      browser: +inject_script_2
+      url: 'https://pairs.lv/#/search/grid/1'
+
+    # httprequest_16人ずつ_PairsTokenが必要
+    +inject_script_4:
+      action>: InjectScript
+      browser: +go_to_3
+      code: "var xml = new XMLHttpRequest();\nxml.open(\n  \"get\",\n  \"https://pairs.lv/1.0/user?device=pc&limit=16&offset=${16*i}&search_type=search&version=git--v20200108074944&without_communities=true\"\n);\nxml.setRequestHeader(\"Accept\", \"application/json, text/plain, */*\");\nxml.setRequestHeader(\"Pairs-Token\", \"3cfqd6rpm6s7b7x7oz8zslkvtq8nw3ihus86doyz\");\nxml.setRequestHeader(\n  \"X-Pairs-User-ID\",\n  \"3AQTaduKvYWFUNdwZg1Utb3zr56m3HY3QqyJWgxEMRTf\"\n);\nxml.onload = e => {\n  var json = JSON.parse(e.target.responseText);\n  var pre = document.createElement(\"pre\");\n  pre.textContent = JSON.stringify(json);\n  document.body.appendChild(pre);\n};\nxml.send();\n"
+      returnValue: false
+
+    # テキストを取得
+    +get_text_1:
+      action>: GetText
+      browser: +inject_script_4
+      selector: 'body > pre'
+      waitBefore: 120000
+      ignoreError: true
+
+    # 変数に保存
+    +store_value_2:
+      action>: StoreValue
+      key: jsonString
+      value: +get_text_1
+
+    # スクリプトを実行
+    +run_script_1:
+      action>: RunScript
+      code: "var sheet = data.reduce((a, b) => a.concat(b));\nvar day = new Date();\nvar today = [day.getMonth() + 1, day.getDate()].map(x => (\"0\" + x).slice(-2));\ntoday.unshift(day.getFullYear());\nvar json = JSON.parse(jsonString).instances;\nvar array = json.map((x, y) => {\n  var key = [\n    \"last_login\",\n    \"id\",\n    \"nickname\",\n    \"age\",\n    \"residence_state\",\n    \"got_like\"\n  ];\n  var val = key.map(a => x[a]);\n  var img = x.images.map(a => a.url);\n  val.push(...img);\n  val.unshift(today.join(\"-\"));\n  return val;\n});\nvar obj = {};\nobj.past = [];\nobj.create = [];\narray.forEach(x => {\n  var n = sheet.indexOf(x[2]);\n  n == -1 ? obj.create.push(x) : obj.past.push({ arr: x, index: n + 1 });\n});\nreturn obj;\n"
+
+    # 変数に保存
+    +store_value_4:
+      action>: StoreValue
+      key: obj
+      value: +run_script_1
+
+    # 各要素について繰り返す
+    +for_each_1:
+      for_each>:
+        past: ${obj.past}
+      _do:
+
+        # セルの値を更新_取得済みデータを最新データに更新
+        +update_cells_1:
+          action>: UpdateCells
+          spreadsheet: +get_spreadsheet_1
+          range: '02_RPA!B${past.index}'
+          values: ${past.arr}
+
+    # セルの値を更新_新着データを末尾に追加(2ループ目で書き込みカウントアップできない)
+    +update_cells_2:
+      action>: UpdateCells
+      spreadsheet: +get_spreadsheet_1
+      range: '02_RPA!B${m}'
+      values: ${obj.create}
+
+    # 変数に保存
+    +store_value_6:
+      action>: StoreValue
+      key: m
+      value: ${m + obj.create.length}

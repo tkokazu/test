@@ -1,0 +1,67 @@
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: pdfList
+  value: []
+  private: false
+
+# 繰り返し
++loop_1:
+  loop>: 3
+  _do:
+
+    # ブラウザを開く
+    +open_browser_1:
+      action>: OpenBrowser
+      url: 'https://yakkun.com/sv/zukan/n908'
+      lang: 'ja-JP'
+      timeZone: 'Asia/Tokyo'
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'
+      headless: true
+      useShadowDomSelector: false
+      private: false
+
+    # PDFに出力
+    +page_p_d_f_1:
+      action>: PagePDF
+      browser: +open_browser_1
+      format: A4
+      media: screen
+      printBackground: false
+      scale: 1
+      private: false
+
+    # 変数に保存
+    +store_value_2:
+      action>: StoreValue
+      key: pdf
+      value: +page_p_d_f_1
+      private: false
+
+    # スクリプトを実行
+    +run_script_1:
+      action>: RunScript
+      code: "pdfList.push(pdf);\n"
+      private: false
+
+    # ファイルを保存
+    +save_file_1:
+      action>: SaveFile
+      provider: local
+      filename: +page_p_d_f_1
+      createPath: false
+      private: false
+
+# PDFファイルを結合する
++combine_p_d_f_1:
+  action>: CombinePDF
+  files: ${pdfList}
+  private: false
+
+# ファイルを保存
++save_file_2:
+  action>: SaveFile
+  provider: local
+  filename: +combine_p_d_f_1
+  createPath: false
+  private: false

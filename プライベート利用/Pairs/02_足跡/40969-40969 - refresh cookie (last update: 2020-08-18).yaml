@@ -1,0 +1,85 @@
+# ブラウザを開く_Google
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.cman.jp/network/support/go_access.cgi'
+  lang: 'ja-JP'
+  timeZone: 'Asia/Tokyo'
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100'
+  headless: true
+
+# URLへ遷移
++go_to_1:
+  action>: GoTo
+  browser: +open_browser_1
+  url: 'https://pairs.lv/'
+
+# クリック_メール用
++click_1:
+  action>: Click
+  browser: +go_to_1
+  selector: 'button[data-test="email-login-button"]'
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+
+# 文字入力_アドレス
++type_text_1:
+  action>: TypeText
+  browser: +click_1
+  selector: 'input[name="email"]'
+  text: 'kikuchi.notification.diary@gmail.com'
+  clearValue: false
+  ignoreError: true
+
+# キーを送信_次へ→メールが飛ぶ
++send_keys_1:
+  action>: SendKeys
+  browser: +type_text_1
+  selector: body
+  keys: ["Enter"]
+  ignoreError: true
+
+# クリック_次へ
++click_2:
+  action>: Click
+  browser: +send_keys_1
+  selector: 'button[data-test="email-login-sent-next-button"]'
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+
+# 人の入力を取得
++get_human_input_1:
+  action>: GetHumanInput
+  text: 'ワンタイムパスワードを入力'
+  image: ''
+  assistant: 'kikuchi@tutorial.co.jp'
+
+# キーを送信
++send_keys_2:
+  action>: SendKeys
+  browser: +click_2
+  selector: body
+  keys: +get_human_input_1
+  ignoreError: true
+
+# スクリーンショットを撮る
++take_screenshot_1:
+  action>: TakeScreenshot
+  browser: +send_keys_2
+  full_page: true
+  type: png
+  waitBefore: 5000
+
+# ページからクッキーを取得
++export_cookies_1:
+  action>: ExportCookies
+  browser: +send_keys_2
+  description: 'なんかのcookie_${moment().utcOffset(540).format("YYYY-MM-DD HH:mm:ss")}'
+  id: '36737de3-2599-48d8-bda2-22f1b8a5f369'
+  meta:
+    display:
+      id:
+        label: 'なんかのcookie'
+        icon: 'fa-cookie-bite'
+        type: chip

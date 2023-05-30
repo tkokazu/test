@@ -1,0 +1,340 @@
+# 起動用から受け取る引数情報
++text_1:
+  action>: Text
+  text: "/** ●起動用から受け取る情報\n * @param {number} index - シートの行番号 : ${index}\n * @param {string} ip_flag - IP登録済フラグ : ${ip_flag}\n * @param {string} exec_flag - RPA実行フラグ : ${exec_flag} \n * @param {string} local_government_name - 自治体名 : ${local_government_name}\n * @param {string} local_government_code - 自治体コード : ${local_government_code}\n * @param {string} choice_id - ふるさとチョイスID : ${choice_id}\n * @param {string} choice_pass - ふるさとチョイスPASS\n * @param {string} pass - E列\n * @param {array} form_list - フォーム番号のリスト : ${JSON.stringify(form_list)}\n * @param {string} uploader - アップロード先名 : ${uploader}\n * @param {string} uploader_link - アップロード先リンク : ${uploader_link}\n */\n"
+  private: false
+
+# 変数に保存_AUTOROのログリンク
++store_value_15:
+  action>: StoreValue
+  key: autoroLogLink
+  value: 'https://console.roboticcrowd.com/projects/136/sessions?query=id%3A${SESSION_QUEUE_ID}'
+  private: false
+
+# 変数に保存_シートに残すログ用
++store_value_16:
+  action>: StoreValue
+  key: pattern
+  value: ["［申込日時ベース］","［更新日時ベース］"]
+  private: false
+
+# 変数に保存_セッションをエラー終了させるかのチェック
++store_value_13:
+  action>: StoreValue
+  key: sessionKillStatus
+  value: []
+  private: false
+
+# ブラウザを開く
++open_browser_2:
+  action>: OpenBrowser
+  url: 'https://testpage.jp/tool/ip_user_agent.php'
+  lang: 'ja,en-US;q=0.9,en;q=0.8'
+  timeZone: 'Asia/Tokyo'
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+  headless: false
+  windowSize: '1920 x 1080'
+  useShadowDomSelector: false
+  private: false
+
+# URLへ遷移__ふるさとチョイスCMS
++go_to_2:
+  action>: GoTo
+  browser: +open_browser_2
+  url: 'https://guest:guest@www.furusato-cms.jp/'
+  private: false
+
+# 文字入力_チョイスID
++type_text_1:
+  action>: TypeText
+  browser: +go_to_2
+  selector: 'input[name="user_name"]'
+  text: ${choice_id}
+  clearValue: true
+  ignoreError: true
+  private: false
+
+# 文字入力_チョイスPASS
++type_text_2:
+  action>: TypeText
+  browser: +type_text_1
+  selector: 'input[name="password"]'
+  text: ${choice_pass}
+  clearValue: true
+  ignoreError: true
+  private: false
+
+# クリック_ログインボタン（実行後3秒待機）
++click_1:
+  action>: Click
+  browser: +type_text_2
+  selector: 'div#content button[type="submit"]'
+  confirm: true
+  waitAfter: 3000
+  ignoreError: true
+  timeout: 30000
+  private: false
+
+# クリック
++click_4:
+  action>: Click
+  browser: +click_1
+  selector: '#cms_notification-modal_confirm'
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+  private: false
+
+# 要素の属性を取得_自治体基本情報のリンク（チョイス内自治体ID取得）
++get_attribute_1:
+  action>: GetAttribute
+  browser: +click_1
+  selector: 'li > ul > li > a[href]'
+  attribute: href
+  ignoreError: true
+  private: false
+
+# 検索して置換_URL内の数字以外を除去→自治体IDのみ残る
++replace_text_1:
+  action>: ReplaceText
+  text: +get_attribute_1
+  find: '\D'
+  use_regex: true
+  replace_with: ''
+  private: false
+
+# 変数に保存_チョイス内の自治体ID（変数名：choiceLocalId）
++store_value_2:
+  action>: StoreValue
+  key: choiceLocalId
+  value: +replace_text_1
+  private: false
+
+# 各要素について繰り返す_フォームの数だけ繰り返す
++for_each_1:
+  for_each>:
+    formNum: ["0"]
+  _do:
+
+    # 変数に保存_logシートにステータスに残す情報（変数名：log）
+    +store_value_5:
+      action>: StoreValue
+      key: log
+      value: []
+      private: false
+
+    # 繰り返し_2ファイル分
+    +loop_1:
+      loop>: 2
+      _do:
+
+        # URLへ遷移_寄付者情報ダウンロードページ
+        +go_to_1:
+          action>: GoTo
+          browser: +click_1
+          url: 'https://guest:guest@www.furusato-cms.jp/tax/forms/viewlog/${choiceLocalId}/${formNum}'
+          private: false
+
+        # 文字入力_10日前の00:00分
+        +type_text_3:
+          action>: TypeText
+          browser: +go_to_1
+          selector: 'input#edit-period-from'
+          text: "${moment().subtract('day', 10).format(\"YYYY/MM/DD\")} 00:00"
+          clearValue: true
+          waitBefore: ${Math.floor( Math.random() * (10000 + 1 - 2000) ) + 2000}
+          waitAfter: ${Math.floor( Math.random() * (10000 + 1 - 2000) ) + 2000}
+          ignoreError: true
+          private: false
+
+        # 文字入力_終了時間（現在時間の59分）
+        +type_text_4:
+          action>: TypeText
+          browser: +type_text_3
+          selector: 'input#edit-period-to'
+          text: '${moment().utcOffset(540).subtract(1, "day").format("YYYY/MM/DD")} 23:59'
+          clearValue: true
+          waitBefore: ${Math.floor( Math.random() * (10000 + 1 - 2000) ) + 2000}
+          waitAfter: ${Math.floor( Math.random() * (10000 + 1 - 2000) ) + 2000}
+          ignoreError: true
+          private: false
+
+        # クリック_ファイル種別のラジオボタン（1ループ目：JSON、2ループ目：申込日時ベース）
+        +click_3:
+          action>: Click
+          browser: +type_text_4
+          selector: 'input[value="${["json", "2"][i]}"]'
+          confirm: true
+          waitBefore: ${Math.floor( Math.random() * (10000 + 1 - 1000) ) + 1000}
+          waitAfter: ${Math.floor( Math.random() * (10000 + 1 - 1000) ) + 1000}
+          ignoreError: true
+          timeout: 30000
+          private: false
+
+        # 真のとき_ReCaptcha v3の対応（デフォルト：false）
+        +if_1:
+          if>: false
+          _do:
+
+            # CAPTCHAを解決
+            +solve_captcha_2:
+              action>: SolveCaptcha
+              browser: +click_3
+              type: reCAPTCHA
+              executeCallback: true
+              private: false
+
+            # 変数に保存
+            +store_value_3:
+              action>: StoreValue
+              key: v3Token
+              value: +solve_captcha_2
+              private: false
+
+            # ページ内でJavaScriptを実行する
+            +inject_script_1:
+              action>: InjectScript
+              browser: +click_3
+              code: "grecaptcha.execute = (sitekey, payload) => {\n  return new Promise(resolve => {\n    resolve(\"${v3Token}\");\n  });\n};\ndocument.querySelector(\"#grecaptcha_token\").value = \"${v3Token}\";\ndocument.querySelector(\"form\").submit();\n"
+              returnValue: false
+              private: false
+
+        # クリック_ダウンロードボタン
+        +click_2:
+          action>: Click
+          browser: +click_3
+          selector: 'button[data-action-name="tax_form_log_download"]:not([id])'
+          confirm: true
+          waitAfter: ${[10000, 60000][i]}
+          ignoreError: true
+          timeout: 30000
+          private: false
+
+        # スクリーンショットを撮る
+        +take_screenshot_1:
+          action>: TakeScreenshot
+          browser: +click_3
+          full_page: false
+          type: png
+          private: false
+
+        # スクリプトを実行_ファイル名を生成する
+        +run_script_1:
+          action>: RunScript
+          code: "const formCode = (\"000\" + formNum).slice(-3); //3桁にゼロ埋め\nconst execTime = moment()\n  .utcOffset(540)\n  .format(\"YYYYMMDD_HHmmss\");\n\n//ファイル名に含める情報リスト\nconst nameArray = [local_government_code, formCode, execTime];\n\n//ファイル名（_で結合）\nconst filename = nameArray.join(\"_\") + \".json\";\nreturn filename;\n"
+          private: false
+
+        # 変数に保存_ファイル名（変数名：fileName）
+        +store_value_1:
+          action>: StoreValue
+          key: fileName
+          value: +run_script_1
+          private: false
+
+        # JSONファイルの生成
+        +inject_script_2:
+          action>: InjectScript
+          browser: +click_3
+          code: "//Unicode文字列の変換\nfunction unicodeToChar(text) {\n  return text.replace(/\\\\u[\\dA-F]{4}/gi, function(match) {\n    return String.fromCharCode(parseInt(match.replace(/\\\\u/g, \"\"), 16));\n  });\n}\nconst content = document.querySelector(\"body > pre\").textContent;\nconst JsonString = unicodeToChar(content);\nconst blob = new Blob([content]);\nconst a = document.createElement(\"a\");\na.href = window.URL.createObjectURL(blob);\na.download = \"${fileName}\";\na.click();\n"
+          waitAfter: 2000
+          returnValue: false
+          private: false
+
+        # ダウンロードファイル一覧
+        +get_download_files_1:
+          action>: GetDownloadFiles
+          order: DESC
+          sort_by: CREATED
+          private: false
+
+        # ファイル名を変更_ファイル名（自治体コード_フォーム番号_日時[YYYYMMDD_HHmmss]）
+        +rename_file_1:
+          action>: RenameFile
+          filename: +get_download_files_1
+          save_as: ${fileName}
+          private: false
+
+        # ファイル名を変更_ダウンロードリストから削除（ディレクトリ移動）
+        +rename_file_2:
+          action>: RenameFile
+          filename: +rename_file_1
+          save_as: '../target.json'
+          private: false
+
+        # 真のとき_要素が見つかった = 正常にダウンロードできた
+        +if_4:
+          if>: ${elem}
+          _do:
+
+            # スクリプトを実行_log
+            +run_script_3:
+              action>: RunScript
+              code: "let status = pattern[i] + \"取込に成功\";\nif (uploadStatus !== \"\") {\n  status = pattern[i] + \"取込に失敗\";\n}\nlog.push(status);\n"
+              private: false
+
+    # 変数に保存_E列のログ生成（変数名：logData）
+    +store_value_8:
+      action>: StoreValue
+      key: logData
+      value: ${log.join("\n")}
+      private: false
+
+    # 日時を取得_moment.jsの時間がズレるのでこちらを利用
+    +get_time_1:
+      action>: GetTime
+      format: 'YYYY-MM-DD HH:mm:ss'
+      timezone: 'Asia/Tokyo'
+      relativeTime: ''
+      private: false
+
+    # 変数に保存_現在時間（変数名：momentTime）
+    +store_value_10:
+      action>: StoreValue
+      key: momentTime
+      value: +get_time_1
+      private: false
+
+    # 既存のスプレッドシートを取得
+    +get_spreadsheet_1:
+      action>: GetSpreadsheet
+      provider: gsheet_5290baffd7a527476880
+      spreadsheet_id: 'https://docs.google.com/spreadsheets/d/125IRPDqEA4u5ksH4pgTbmTdTVmRqNI8ny7v3JhzH6Gc/edit?pli=1#gid=2118051772'
+      private: false
+      meta:
+        display:
+          provider:
+            type: chip
+            label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+            icon: googlespreadsheet
+
+    # 末尾に値を追加_logシートに累積（自治体名,自治体コード,フォーム番号,現在時刻,媒体名,成功or失敗）
+    +append_values_1:
+      action>: AppendValues
+      spreadsheet: +get_spreadsheet_1
+      range: log
+      values: ["${local_government_name}","${local_government_code}","${formNum}","${momentTime}","ふるさとチョイス","${logData}","${autoroLogLink}"]
+      private: false
+
+    # スクリプトを実行_「失敗」が含まれているか確認
+    +run_script_4:
+      action>: RunScript
+      code: "if (logData.indexOf(\"失敗\") > -1) {\n  sessionKillStatus.push(\"フォーム番号：\" + formNum + \"_error occurred.\");\n}\nreturn sessionKillStatus;\n"
+      private: false
+
+    # 変数に保存_セッションキルするかどうか判定用（変数名：sessionKillStatus）
+    +store_value_14:
+      action>: StoreValue
+      key: sessionKillStatus
+      value: +run_script_4
+      private: false
+
+# 真のとき_「失敗」が含まれているときはエラー終了する
++if_9:
+  if>: ${sessionKillStatus.length != 0}
+  _do:
+
+    # セッションをエラーにする（ログを探しやすくするため）
+    +kill_attempt_2:
+      action>: KillAttempt
+      message: ${sessionKillStatus.join("\n")}
+      private: false

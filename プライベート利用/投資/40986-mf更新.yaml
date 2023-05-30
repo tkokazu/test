@@ -1,0 +1,104 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: https://moneyforward.com/
+  lang: ja-JP
+  userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML,
+    like Gecko) Chrome/86.0.4240.80 Safari/537.36
+  headless: true
+  useShadowDomSelector: false
+
+# クリック
++click_2:
+  action>: Click
+  browser: "+open_browser_1"
+  selector: ".web-sign-in > a"
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+
+# クリック_mail
++click_1:
+  action>: Click
+  browser: "+open_browser_1"
+  selector: div.blockContent > a
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+
+# 文字入力
++type_text_1:
+  action>: TypeText
+  browser: "+click_1"
+  selector: input[type="email"]
+  text: taku.okazu@gmail.com
+  clearValue: false
+  ignoreError: true
+
+# mlad
++inject_script_1:
+  action>: InjectScript
+  browser: "+click_1"
+  code: |
+    let input = document.querySelector('input[type="email"]');
+    input.value = "taku.okazu@gmail.com";
+    input.dispatchEvent(new Event("input"));
+    setTimeout(() => document.querySelector('input[type="submit"]').click(), 1500);
+  waitAfter: 5000
+  returnValue: false
+
+# pswd
++type_password_1:
+  action>: TypePassword
+  browser: "+inject_script_1"
+  selector: input[type="password"]
+  password: "********"
+  ignoreError: true
+
+# pswd
++inject_script_2:
+  action>: InjectScript
+  browser: "+inject_script_1"
+  code: 'setTimeout(() => document.querySelector(''input[type="submit"]'').click(),
+    1500);
+
+    '
+  waitAfter: 10000
+  returnValue: false
+
+# URLへ遷移
++go_to_1:
+  action>: GoTo
+  browser: "+inject_script_2"
+  url: https://moneyforward.com/bs/portfolio#portfolio_det_eq
+
+# URLへ遷移
++go_to_2:
+  action>: GoTo
+  browser: "+go_to_1"
+  url: https://moneyforward.com/accounts
+  waitBefore: 5000
+  waitAfter: 5000
+
+# 一括更新
++inject_script_3:
+  action>: InjectScript
+  browser: "+go_to_2"
+  code: |
+    let token = document.querySelector('meta[name="csrf-token"]').content;
+    let url = "https://moneyforward.com/faggregation_queue2";
+    let ajax = new XMLHttpRequest();
+    ajax.open("post", url, false);
+    ajax.setRequestHeader("X-CSRF-Token", token);
+    ajax.send();
+  waitAfter: 90000
+  returnValue: false
+
+# HTTPリクエスト_メール消えよ
++h_t_t_p_request_1:
+  action>: HTTPRequest
+  url: https://script.google.com/macros/s/AKfycbyalWnwChfvBwyq4jRm8TX43pQNIX4MxbSdvDWokslyIPkXRPy7X5fRAKvtBL0Hvm0W/exec
+  params: ''
+  method: POST
+  headers: ''
+  multipart: false

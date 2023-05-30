@@ -1,0 +1,61 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://tutorial.co.jp/'
+  lang: 'ja-JP'
+  headless: true
+
+# エンコードライブラリ
++inject_script_2:
+  action>: InjectScript
+  browser: +open_browser_1
+  code: "var Encoding;\nvar xhr = new XMLHttpRequest();\nxhr.open(\n  \"GET\",\n  \"https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/1.0.30/encoding.js\",\n  true\n);\nxhr.onreadystatechange = function() {\n  if (xhr.readyState == 4) {\n    Encoding = eval(xhr.responseText + \"Encoding\");\n  }\n};\nxhr.send();\n"
+  returnValue: false
+
+# テキストファイルを改造してSJIS変換
++inject_script_1:
+  action>: InjectScript
+  browser: +open_browser_1
+  code: "const input = document.createElement(\"input\");\ninput.type = \"file\";\ninput.id = \"testfile\";\ninput.addEventListener(\"change\", e => {\n  const file = e.target.files[0];\n  const fileName = file.name;\n\n  //ファイルの読み込み\n  const reader = new FileReader();\n  reader.readAsText(file, \"shift-jis\");\n  reader.addEventListener(\"load\", () => {\n    //ファイルの中身\n    console.log(reader.result);\n    const csvData = reader.result + \"\\n\";\n\n    //shift-jisに戻す\n    const unicodeList = [];\n    for (var i = 0; i < csvData.length; i += 1) {\n      unicodeList.push(csvData.charCodeAt(i));\n    }\n    const shiftJisCodeList = Encoding.convert(unicodeList, \"sjis\", \"unicode\");\n    const uInt8List = new Uint8Array(shiftJisCodeList);\n\n    //新規ファイルの作成\n    const newFile = new Blob([uInt8List], { type: \"text/plain\" });\n    const a = document.createElement(\"a\");\n    a.innerText = fileName;\n    a.download = fileName;\n    a.href = window.URL.createObjectURL(newFile);\n    a.id = \"rpaFile\";\n    document.body.appendChild(a);\n  });\n});\ndocument.body.appendChild(input);\n"
+  returnValue: false
+
+# ファイルを取得
++get_file_1:
+  action>: GetFile
+  provider: local
+  filename: rc_dc7e10f93fbbea645826
+  meta:
+    display:
+      filename:
+        label: '【VK抽出用】.csv'
+        icon: text
+        type: chip
+
+# フォームでファイルを送信
++set_file_to_upload_1:
+  action>: SetFileToUpload
+  browser: +inject_script_1
+  selector: '#testfile'
+  file: +get_file_1
+  ignoreError: true
+
+# クリック
++click_1:
+  action>: Click
+  browser: +set_file_to_upload_1
+  selector: '#rpaFile'
+  confirm: true
+  ignoreError: true
+  timeout: 30000
+
+# ダウンロードファイル一覧
++get_download_files_1:
+  action>: GetDownloadFiles
+  order: ASC
+  sort_by: FILENAME
+
+# ファイルからテキストを読み込む
++read_text_1:
+  action>: ReadText
+  filename: +get_download_files_1
+  encoding: 'utf-8'

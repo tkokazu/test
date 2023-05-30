@@ -1,0 +1,34 @@
+# HTTPリクエスト_bot追加している人のリスト
++h_t_t_p_request_2:
+  action>: HTTPRequest
+  url: 'https://api.telegram.org/bot5153837675:AAEYNCZP1gnCQb_PdMJZSeyuEJhp4eKWdf4/getUpdates'
+  params: ''
+  method: POST
+  headers: ''
+  multipart: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: bot_users
+  value: +h_t_t_p_request_2
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "const users = bot_users.result;\nreturn users.filter(x => !!x.message).map(x => x.message.chat.id);\n"
+
+# 各要素について繰り返す
++for_each_1:
+  for_each>:
+    chat_id: +run_script_1
+  _do:
+
+    # HTTPリクエスト
+    +h_t_t_p_request_1:
+      action>: HTTPRequest
+      url: 'https://api.telegram.org/bot5153837675:AAEYNCZP1gnCQb_PdMJZSeyuEJhp4eKWdf4/sendMessage?chat_id=${chat_id}&text=testtest'
+      params: ''
+      method: POST
+      headers: ''
+      multipart: false

@@ -1,0 +1,29 @@
+# 既存のスプレッドシートを取得
++get_spreadsheet_1:
+  action>: GetSpreadsheet
+  provider: gsheet_5290baffd7a527476880
+  spreadsheet_id: 'https://docs.google.com/spreadsheets/d/1JC5-a_hJicjoAiryhK5KgXhwo4wn9VVxsvrpJtUZJyQ/edit#gid=466754235'
+  meta:
+    display:
+      provider:
+        type: chip
+        label: 'Google Spreadsheet (kikuchi@tutorial.co.jp)'
+        icon: googlespreadsheet
+
+# セルの値を取得
++get_cells_1:
+  action>: GetCells
+  spreadsheet: +get_spreadsheet_1
+  range: before
+  findAll: false
+
+# 変数に保存
++store_value_1:
+  action>: StoreValue
+  key: sheetData
+  value: +get_cells_1
+
+# スクリプトを実行
++run_script_1:
+  action>: RunScript
+  code: "function deplicateChecker(targetRow, array) {\n  //住所の重複しているデータを抽出\n  const targetAddress = array.filter(el => el[2] === targetRow[2]);\n  //日付の新しい順にソート\n  const sortElms = targetAddress.sort((a, b) => {\n    const a_date = new Date(a[1]);\n    const b_date = new Date(b[1]);\n    return a_date < b_date ? 1 : -1;\n  });\n  //URLの重複を排除\n  const targetElements = sortElms.filter(\n    (val, i, self) => self.map(x => x[9]).indexOf(val[9]) === i\n  );\n\n  //S列の値を作成\n  const urlText = targetElements.map((x, i) => i + 1 + \" \" + x[9]);\n  let resultRow = targetRow;\n  if (targetElements.length > 1) {\n    resultRow = targetElements[0];\n    resultRow[18] = urlText.join(\"\\n\");\n  }\n\n  const indexArray = targetElements.map(row =>\n    array.findIndex(el => JSON.stringify(el) === JSON.stringify(row))\n  );\n  return {\n    row: resultRow,\n    deleteIndex: indexArray\n  };\n}\n\n//S列（18列目）の追加\nsheetData = sheetData.map(x => {\n  x.splice(18, 0, \"\");\n  return x;\n});\nsheetData[0][18] = \"別棟図面URL\"; //header名\n\n//配列の整形メインコード\nconst result = [];\ndo {\n  const checker = deplicateChecker(sheetData[0], sheetData);\n  checker.deleteIndex.forEach((num, i) => sheetData.splice(num - i, 1));\n  result.push(checker.row);\n} while (sheetData.length != 0);\nreturn result;\n"

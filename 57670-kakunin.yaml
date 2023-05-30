@@ -1,0 +1,16 @@
+# ブラウザを開く
++open_browser_1:
+  action>: OpenBrowser
+  url: 'https://www.instagram.com/_.amii/'
+  lang: 'ja-JP'
+  headless: true
+  useShadowDomSelector: false
+  private: false
+
+# GPTによるチャット
++chat_with_g_p_t_1:
+  action>: ChatWithGPT
+  prompt: 'おなかが痛いとき'
+  max_tokens: 300
+  temperature: 1
+  private: false
